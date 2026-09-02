@@ -177,6 +177,7 @@ tr:hover td{background:var(--surface-hover)}
     <button class="nav-item" data-view="recon"><span class="num">07 /</span> Reconciliation <small>15s</small></button>
     <button class="nav-item" data-view="vault"><span class="num">08 /</span> Vault & Audit</button>
     <button class="nav-item" data-view="audit"><span class="num">09 /</span> Audit & Tests</button>
+    <button class="nav-item" data-view="perf"><span class="num">10 /</span> Performance <small>winrate</small></button>
 
     <div style="margin-top:14px;padding:10px;background:var(--surface-inset);border:1px solid var(--border-subtle);border-radius:8px">
       <div class="mono" style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-low);margin-bottom:6px">Role</div>
@@ -234,6 +235,7 @@ tr:hover td{background:var(--surface-hover)}
             <button class="btn btn-sm" id="btnGenSignal">⚡ Generate Signal</button>
           </div>
         </div>
+        <div id="watchStrip" style="padding:8px 12px;border-bottom:1px solid var(--border-subtle);display:flex;gap:6px;align-items:center;flex-wrap:wrap"></div>
         <div id="compassRow" style="padding:10px 12px;border-bottom:1px solid var(--border-subtle);background:var(--surface-inset)"></div>
         <div style="overflow:auto"><table><thead><tr><th>Symbol • Venue</th><th>Score</th><th>Flow</th><th>Liquidity USD</th><th>Narrative v</th><th>MTF Align</th><th>Imb / Spread</th><th>Plan (Entry • SL • TP)</th><th>Signal</th></tr></thead><tbody id="feedBody"></tbody></table></div>
         <div style="padding:10px;display:flex;gap:8px;flex-wrap:wrap"><span class="badge badge-lime">ACCUMULATION = institutional buy</span><span class="badge badge-rust">DISTRIBUTION</span><span class="badge">MTF = M15/H1/H4/D1 confluence required</span><span class="badge" id="scannerSourceBadge" style="max-width:520px;white-space:normal"></span></div>
@@ -430,6 +432,34 @@ tr:hover td{background:var(--surface-hover)}
             </div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- PERFORMANCE — winrate / expectancy / prob shadow / trailing -->
+    <section data-panel="perf" style="display:none">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">10 / <b>PERFORMANCE — winrate rolling + expectancy + profit factor</b></div><span class="badge badge-lime" id="perfBadge">signal_outcomes</span></div>
+        <div style="padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+          <div class="kpi" style="padding:12px"><div class="kpi-label">Winrate (semua)</div><div class="kpi-val" id="perfWinAll">—</div><div class="kpi-sub" id="perfWinAllSub">TP / (TP+SL)</div></div>
+          <div class="kpi" style="padding:12px"><div class="kpi-label">Winrate rolling 100</div><div class="kpi-val" id="perfWinRoll">—</div><div class="kpi-sub" id="perfWinRollSub">last 100 signals</div></div>
+          <div class="kpi" style="padding:12px"><div class="kpi-label">Expectancy</div><div class="kpi-val" id="perfExp">—</div><div class="kpi-sub">avg R per trade</div></div>
+          <div class="kpi" style="padding:12px"><div class="kpi-label">Profit factor</div><div class="kpi-val" id="perfPF">—</div><div class="kpi-sub">gross win / gross loss</div></div>
+        </div>
+        <div style="padding:0 14px 10px" class="notice">Winrate itu properti data, bukan klaim. Target ≥80% = hasil seleksi ketat (P≥threshold) + trailing yang ngunci profit. Threshold di-tune sampai 200 outcomes numpuk — <b>dash ini nunjukin angka aslinya.</b></div>
+      </div>
+      <div class="grid-2" style="margin-top:12px">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">RECENT OUTCOMES — TP/SL atomic</div><span class="mono" style="font-size:10px;color:var(--fg-low)">exit-monitor → closePosition → signal_outcomes</span></div>
+          <div style="overflow:auto"><table><thead><tr><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th><th>PnL %</th><th>R</th><th>Outcome</th><th>Bars</th></tr></thead><tbody id="perfOutcomesBody"></tbody></table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">PROBABILITY SHADOW — P(win) · EV per signal</div><span class="badge" id="probShadowBadge">n=± prior 52% • shadow</span></div>
+          <div style="overflow:auto"><table><thead><tr><th>Symbol</th><th>P(win)</th><th>EV</th><th>Samp.</th><th>Bucket</th><th>Prior</th></tr></thead><tbody id="probShadowBody"></tbody></table></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:12px">
+        <div class="panel-head"><div class="panel-title">TRAILING STOP ACTIVITY — chandelier breakeven@1R → 2×ATR</div><span class="mono" style="font-size:10px;color:var(--fg-low)">STOP_TRAILED audit · ratchet-only</span></div>
+        <div style="overflow:auto"><table><thead><tr><th>Position</th><th>New SL</th><th>Reason</th><th>At</th></tr></thead><tbody id="trailBody"></tbody></table></div>
       </div>
     </section>
 
@@ -1132,6 +1162,72 @@ document.getElementById('btnLive').addEventListener('click', async ()=>{
   await fetchLiveAll();
   setInterval(fetchLiveAll, 7000);
 })();
+
+// ═══ PERFORMANCE + WATCHLIST (panel 10 & watch strip) ═══
+let perfData={total:0,wins:0,losses:0,winrate:0,window:100,rolling:{},pnlPctSum:0,expectancyR:0,profitFactor:0,recent:[]};
+let probShadow=[], trailEvents=[], watchList=[];
+const el = (id)=>document.getElementById(id);
+function pctColor(p){ const x=Number(p||0); return x>=0.8?'var(--lime)':x>=0.6?'var(--amber)':'var(--status-error)'; }
+function renderWatchStrip(){
+  const box=el('watchStrip'); if(!box) return;
+  if(!watchList.length){ box.innerHTML='<span class="mono" style="font-size:10px;color:var(--fg-low);letter-spacing:0.08em">👁 WATCHING: —</span>'; return; }
+  box.innerHTML='<span class="mono" style="font-size:10px;color:var(--fg-low);letter-spacing:0.08em">👁 AI WATCHING (feed live):</span>'+watchList.map(s=>'<span class="badge" style="font-family:var(--font-mono)">'+s+'</span>').join('');
+}
+function renderPerf(){
+  const wrAll=Number(perfData.winrate||0), wrRoll=Number(perfData.rolling?.winrate||0);
+  el('perfWinAll').textContent=perfData.total? (wrAll*100).toFixed(1)+'%':'—';
+  el('perfWinAllSub').textContent=perfData.wins+'W / '+perfData.losses+'L · n='+perfData.total;
+  el('perfWinRoll').textContent=perfData.rolling?.n? (wrRoll*100).toFixed(1)+'%':'—';
+  el('perfWinRollSub').textContent='last '+perfData.window+' · '+ (perfData.rolling?.n||0)+' closed';
+  el('perfWinAll').style.color=pctColor(wrAll); el('perfWinRoll').style.color=pctColor(wrRoll);
+  el('perfExp').textContent=perfData.total? Number(perfData.expectancyR||0).toFixed(3)+'R':'—';
+  el('perfPF').textContent=perfData.profitFactor?'PF '+Number(perfData.profitFactor).toFixed(2):'—';
+  // recent outcomes
+  const ob=el('perfOutcomesBody');
+  if(ob){
+    if(!perfData.recent?.length){ ob.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--fg-low);padding:14px">Belum ada close — PAPER campaign belum mulai trading</td></tr>'; }
+    else ob.innerHTML=perfData.recent.map(o=>{
+      const pnl=Number(o.pnlPct||0); const isWin=o.outcome==='TP';
+      const col=isWin?'var(--lime)':(o.outcome==='SL'?'var(--status-error)':'var(--fg-mid)');
+      return '<tr class="mono" style="font-size:11px"><td>'+o.symbol+'</td><td>'+o.side+'</td><td>'+Number(o.entryPrice).toPrecision(6)+'</td><td>'+(o.exitPrice?Number(o.exitPrice).toPrecision(6):'—')+'</td><td style="color:'+col+'">'+(pnl?pnl.toFixed(2)+'%':'—')+'</td><td style="color:'+col+'">'+(o.rMultiple!=null?Number(o.rMultiple).toFixed(2)+'R':'—')+'</td><td><span class="badge '+(isWin?'badge-lime':o.outcome==='SL'?'badge-rust':'')+'">'+o.outcome+'</span></td><td>'+(o.barsHeld??'—')+'</td></tr>';
+    }).join('');
+  }
+  el('perfBadge').textContent='signal_outcomes • '+perfData.total+' total';
+  // prob shadow
+  const pb=el('probShadowBody');
+  if(pb){
+    if(!probShadow.length){ pb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--fg-low);padding:14px">Belum ada sample prob — engine jalan shadow (butuh ≥200 samples buat enforce)</td></tr>'; }
+    else pb.innerHTML=probShadow.map(r=>{
+      return '<tr class="mono" style="font-size:11px"><td>'+r.symbol+'</td><td style="color:'+pctColor(r.p)+'">'+(r.p!=null?(r.p*100).toFixed(1)+'%':'—')+'</td><td style="color:'+(Number(r.ev||0)>0?'var(--lime)':'var(--status-error)')+'">'+(r.ev!=null?r.ev.toFixed(3):'—')+'</td><td>'+(r.n??'—')+'</td><td style="font-size:10px;color:var(--fg-low)">'+(r.bucket||'—')+'</td><td>'+(r.prior?'<span class="badge badge-amber">prior</span>':'<span class="badge">data</span>')+'</td></tr>';
+    }).join('');
+  }
+  el('probShadowBadge') && (el('probShadowBadge').textContent='n='+(probShadow[0]?.n??'±')+' • shadow (collect 200)');
+  // trail events
+  const tb=el('trailBody');
+  if(tb){
+    if(!trailEvents.length){ tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--fg-low);padding:14px">Belum ada trailing stop activity — belum ada posisi masuk fase +1R</td></tr>'; }
+    else tb.innerHTML=trailEvents.map(t=>{
+      return '<tr class="mono" style="font-size:11px"><td>'+String(t.entityId||'').slice(0,8)+'</td><td style="color:var(--lime)">'+fmtUsd(t.newSl)+'</td><td style="font-size:10px;color:var(--fg-low)">'+(t.reason||'—')+'</td><td>'+new Date(t.at).toLocaleTimeString()+'</td></tr>';
+    }).join('');
+  }
+}
+async function fetchPerf(){
+  try{
+    const [wr,pb,tr,ws] = await Promise.all([
+      fetch(API_BASE+'/api/v1/analytics/winrate?limit=200&window=100',{credentials:'include'}).then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch(API_BASE+'/api/v1/analytics/prob-shadow',{credentials:'include'}).then(r=>r.ok?r.json():[]).catch(()=>[]),
+      fetch(API_BASE+'/api/v1/analytics/trail-events',{credentials:'include'}).then(r=>r.ok?r.json():[]).catch(()=>[]),
+      fetch(API_BASE+'/api/v1/system/watchlist',{credentials:'include'}).then(r=>r.ok?r.json():null).catch(()=>null),
+    ]);
+    if(wr) perfData=wr;
+    if(Array.isArray(pb)) probShadow=pb;
+    if(Array.isArray(tr)) trailEvents=tr;
+    if(ws && Array.isArray(ws.symbols)) watchList=ws.symbols;
+    renderPerf(); renderWatchStrip();
+  }catch(e){ console.log('perf fetch err',e); }
+}
+renderPerf(); renderWatchStrip();
+setInterval(fetchPerf, 10000);
 
 setTimeout(()=>{ if(!localStorage.getItem(LS_KEY+'-toured')){ localStorage.setItem(LS_KEY+'-toured','1'); openTour(); }}, 1200);
 </script>

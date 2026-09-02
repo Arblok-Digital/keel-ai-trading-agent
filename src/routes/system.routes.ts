@@ -18,6 +18,19 @@ import { timeService } from '../services/ingestion/time-sync.js';
 
 export const systemRoutes = new Hono();
 
+// Current dynamic watchlist (worker publishes feed:state to Redis every 5s)
+systemRoutes.get('/watchlist', requireRole('owner', 'viewer', 'system_agent'), async (c) => {
+  try {
+    const { MultiSourceFeedManager } = await import('../services/ingestion/feed-manager.js');
+    const state = await MultiSourceFeedManager.readStateFromRedis();
+    const watchlist = state?.state?.watchlist ?? [];
+    return c.json({ atServerMs: timeService.now(), symbols: watchlist, source: state ? 'redis' : 'none' });
+  } catch {
+    return c.json({ atServerMs: timeService.now(), symbols: [], source: 'error' });
+  }
+});
+
+
 const credentialsSchema = z.object({
   venue: z.enum(VENUES),
   label: z.string().min(1).max(64),

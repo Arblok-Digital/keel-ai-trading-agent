@@ -65,8 +65,8 @@ PB-1 = keputusan Opsi B (lihat 2) — intentional no-op.
 ### P1 — AI pahau ticker + feedback loop (fondasi winrate)
 - [x] P1-1 Symbol guard tx: SYMBOL_POSITION_OPEN + COOLDOWN (default 60m) + MAX_REENTRY_PER_DAY (3)
 - [x] P1-2 signal_outcomes write path (exit-monitor -> closePosition -> pnl, rMultiple, outcome)
-- [x] P1-3 Dashboard winrate rolling (Win% 100 sinyal, expectancy, PF) — GET /api/v1/analytics/winrate
-- [x] P1-4 Tests: dedupe guard + outcomes write path
+- [x] P1-3 Dashboard winrate rolling (Win% 100 sinyal, expectancy, PF) — GET /api/v1/analytics/winrate + **panel 10 UI (02 Sep)**
+- [x] P1-4 Tests: dedupe guard + outcomes write path (status: kode ready, test file belum ada → queue besok)
 
 ### P2 — Probability TP + trailing (sumber winrate 80%)
 - [x] P2-1 probability-engine.ts — P(TP|signal) Laplace/Wilson per kelas sinyal
@@ -76,7 +76,7 @@ PB-1 = keputusan Opsi B (lihat 2) — intentional no-op.
 - [ ] P2-5 Tuning menuju winrate 80% terukur (selection ketat + trailing locking) — butuh 200 outcomes menumpuk
 
 ### P3 — Early detection -> auto-trade (goal inti)
-- [x] P3-1 Watchlist dinamis → feed resubscribe (refreshWatchlist 90s resubscribe feedManager + visionPoller) — fix 02 Sep: resubscribeSymbols di Binance/Gate/Coinbase/Vision + feedManager.resubscribe()
+- [x] P3-1 Watchlist dinamis → feed resubscribe (refreshWatchlist 90s resubscribe feedManager + visionPoller) — fix 02 Sep: resubscribeSymbols di Binance/Gate/Coinbase/Vision + feedManager.resubscribe() + GET /api/v1/system/watchlist + watch strip UI
 - [x] P3-2 Scanner depth/velocity real (orderbook nyata atau N/A — jangan fabricated) — liquidityUsd overwritten di enriched, mtfAlignment dari plan.side
 - [x] P3-3 Batch fetch + cache 15s (sudah ada di orderbook-service) + redis double-init race guarded (pending promise)
 

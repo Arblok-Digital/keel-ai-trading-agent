@@ -107,11 +107,66 @@ readRoutes.get('/analytics/winrate', requireRole('owner', 'viewer', 'system_agen
       total: rows.length, wins, losses, winrate: Number(winrate.toFixed(4)), window: sumRolling,
       rolling: { n: rollingRows.length, wins: rw, losses: rl, winrate: rTotal > 0 ? Number((rw / rTotal).toFixed(4)) : 0 },
       pnlPctSum: Number(pnl.toFixed(2)), expectancyR: Number(expectancy.toFixed(4)), profitFactor: Number(pf.toFixed(3)),
+      recent: rows.slice(0, 20).map((r) => ({
+        id: r.id, decisionId: r.decisionId, symbol: r.symbol, side: r.side,
+        entryPrice: Number(r.entryPrice ?? 0), exitPrice: r.exitPrice != null ? Number(r.exitPrice) : null,
+        pnlPct: r.pnlPct != null ? Number(r.pnlPct) : null, rMultiple: r.rMultiple != null ? Number(r.rMultiple) : null,
+        outcome: r.outcome, barsHeld: r.barsHeld ?? null, closedAt: r.closedAt,
+      })),
     });
   } catch (e) {
-    return c.json({ total: 0, wins: 0, losses: 0, winrate: 0, window: sumRolling, rolling: { n: 0, wins: 0, losses: 0, winrate: 0 }, pnlPctSum: 0, expectancyR: 0, profitFactor: 0, _note: e instanceof Error ? e.message : String(e) });
+    return c.json({ total: 0, wins: 0, losses: 0, winrate: 0, window: sumRolling, rolling: { n: 0, wins: 0, losses: 0, winrate: 0 }, pnlPctSum: 0, expectancyR: 0, profitFactor: 0, recent: [], _note: e instanceof Error ? e.message : String(e) });
   }
 });
+
+// Probability shadow — recent P(win)/EV per evaluated signal (from signal-recorder prob-gate)
+readRoutes.get('/analytics/prob-shadow', requireRole('owner', 'viewer', 'system_agent'), async (c) => {
+  try {
+    const { getDb } = await import('../db/index.js');
+    const { signalFeatures } = await import('../../db/schema.js');
+    const db = getDb();
+    const rows = await db
+      .select({ id: signalFeatures.id, symbol: signalFeatures.symbol, ts: signalFeatures.ts, source: signalFeatures.source, planReason: signalFeatures.planReason, raw: signalFeatures.raw })
+      .from(signalFeatures)
+      .where(eq(signalFeatures.source, 'prob-gate'))
+      .orderBy(desc(signalFeatures.ts))
+      .limit(24);
+    return c.json(rows.map((r) => {
+      const raw = (r.raw ?? {}) as { p?: number; ev?: number; prior?: boolean; n?: number; bucket?: string };
+      return {
+        id: r.id, symbol: r.symbol, ts: Number(r.ts),
+        p: typeof raw.p === 'number' ? Number(raw.p.toFixed(3)) : null,
+        ev: typeof raw.ev === 'number' ? Number(raw.ev.toFixed(3)) : null,
+        prior: !!raw.prior, n: typeof raw.n === 'number' ? raw.n : null, bucket: raw.bucket ?? null,
+        reason: r.planReason ?? '',
+      };
+    }));
+  } catch {
+    return c.json([]);
+  }
+});
+
+// Trailing stop activity — recent STOP_TRAILED audit events (owner/agent only: audit_logs RLS)
+readRoutes.get('/analytics/trail-events', requireRole('owner', 'system_agent'), async (c) => {
+  try {
+    const { getDb } = await import('../db/index.js');
+    const { auditLogs } = await import('../../db/schema.js');
+    const db = getDb();
+    const rows = await db
+      .select({ id: auditLogs.id, action: auditLogs.action, entityId: auditLogs.entityId, diff: auditLogs.diff, createdAt: auditLogs.createdAt })
+      .from(auditLogs)
+      .where(eq(auditLogs.action, 'STOP_TRAILED'))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(20);
+    return c.json(rows.map((r) => {
+      const d = (r.diff ?? {}) as { newStopLossPrice?: number; reason?: string };
+      return { id: r.id, entityId: r.entityId, newSl: d.newStopLossPrice ?? null, reason: d.reason ?? '', at: r.createdAt };
+    }));
+  } catch {
+    return c.json([]);
+  }
+});
+
 
 readRoutes.post('/positions/:positionId/close', requireRole('owner', 'system_agent'), async (c) => {
   const positionId = c.req.param('positionId');

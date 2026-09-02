@@ -22,6 +22,7 @@ export interface DataSourceState {
   depth: Record<string, SourceMetrics>;
   trade: Record<string, SourceMetrics>;
   active: Partial<Record<FeedKind, FeedSourceId>>;
+  watchlist: string[];
 }
 
 export interface FeedProvider {
@@ -152,7 +153,7 @@ export class MultiSourceFeedManager {
       depth[sid] = this.getMetric('depth', sid);
       trade[sid] = this.getMetric('trade', sid);
     }
-    return { depth, trade, active: { ...this.active } };
+    return { depth, trade, active: { ...this.active }, watchlist: [...this.symbolList] };
   }
 
   activeSource(kind: FeedKind): FeedSourceId | null {

@@ -243,10 +243,8 @@ async function main(): Promise<void> {
 
   const feedManager = new MultiSourceFeedManager();
   // expose for watchlist resubscribe (refreshWatchlist runs later, after closure init)
-  // @ts-expect-error runtime handle for resubscribe
-  (globalThis as unknown as { __feedManagerInstance?: typeof feedManager }).__feedManagerInstance = feedManager as unknown as { resubscribe: (s: string[]) => void };
+  (globalThis as unknown as { __feedManagerInstance?: { resubscribe: (s: string[]) => void } }).__feedManagerInstance = feedManager;
   const visionPoller = new BinanceVisionPoller();
-  // @ts-expect-error runtime handle
   (globalThis as unknown as { __visionPollerResubscribe?: (s: string[]) => void }).__visionPollerResubscribe = (s: string[]) => visionPoller.resubscribeSymbols(s);
   visionPoller.registerKlineHandler((symbol, kline, interval) => {
     const tfMap: Record<string, 'm15'|'h1'|'h4'|'d1'> = { m15: 'm15', h1: 'h1', h4: 'h4', d1: 'd1' };
