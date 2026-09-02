@@ -1,0 +1,49 @@
+# ════════════════════════════════════════════════════════════════════
+#  keel — AI Trading Agent · Market-Maker Spot Terminal
+#  Single source of ignore rules. If it holds a secret or state, it stays local.
+# ════════════════════════════════════════════════════════════════════
+
+# --- Secrets & environment (NEVER commit: vault keys, JWT, MFA, passwords) ---
+.env
+.env.local
+.env.*.local
+.env.production
+!.env.example
+
+# --- Dependencies ---
+node_modules/
+
+# --- Build & output ---
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# --- Runtime state (paper ledger caches, archives, WORM exports, ports) ---
+data/
+backups/
+.logs/
+.chosen_port
+*.log
+*.err
+
+# --- Test & coverage ---
+coverage/
+.nyc_output/
+
+# --- Local tooling caches (agent terminals, browser automation, LLM corpora caches) ---
+.kilo/
+.playwright-mcp/
+
+# --- OS / editor noise ---
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- Local DB volumes (if bind-mounted) ---
+pgdata/
+

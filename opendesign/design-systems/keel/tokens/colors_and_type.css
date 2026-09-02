@@ -1,0 +1,105 @@
+/* ============================================================
+   KEEL — "Blueprint Terminal" Design Tokens
+   Dark techy · distinctive · developer tool
+   Temperature: COOL · Accents: keel-lime + drift-amber
+   ============================================================ */
+
+:root {
+  /* ---------- RAW: ink backgrounds (chroma <= 0.02) ---------- */
+  --bg-abyss:   oklch(13% 0.012 235);
+  --bg-deep:    oklch(16% 0.014 232);
+  --bg-base:    oklch(19% 0.015 230);
+  --bg-raised:  oklch(22.5% 0.017 228);
+  --bg-overlay: oklch(26% 0.018 226);
+
+  /* ---------- RAW: foregrounds ---------- */
+  --fg-hi:    oklch(94% 0.007 210);
+  --fg-mid:   oklch(71% 0.012 214);
+  --fg-low:   oklch(51% 0.013 220);
+  --fg-faint: oklch(36% 0.013 222);
+
+  /* ---------- RAW: accents ---------- */
+  --lime:      oklch(89% 0.235 129);  /* keel lime  — generate / synced / primary action */
+  --lime-deep: oklch(74% 0.21 130);   /* pressed / hover on lime */
+  --amber:     oklch(82% 0.155 78);   /* drift amber — warning / drift / review gates */
+
+  /* ---------- RAW: status ---------- */
+  --status-synced: var(--lime);
+  --status-drift:  var(--amber);
+  --status-stale:  oklch(58% 0.09 30);  /* rusted orange, stale artifacts */
+  --status-error:  oklch(62% 0.2 25);
+
+  /* ---------- RAW: type families ---------- */
+  --font-display: "Clash Display", "Space Grotesk", sans-serif;
+  --font-ui:      "Space Grotesk", sans-serif;
+  --font-mono:    "JetBrains Mono", monospace;
+
+  /* ---------- RAW: type scale (app UI @ ~1440 viewport) ---------- */
+  --text-d1: clamp(44px, 5vw, 76px);   /* hero display */
+  --text-d2: clamp(28px, 3vw, 40px);   /* section display */
+  --text-h1: 24px;
+  --text-h2: 19px;
+  --text-h3: 16px;
+  --text-body: 15px;
+  --text-small: 13px;
+  --text-micro: 11px;                  /* mono uppercase labels */
+
+  /* ---------- RAW: geometry ---------- */
+  --radius-s: 4px;
+  --radius-m: 6px;
+  --radius-l: 10px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* ---------- RAW: motion ---------- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 140ms;
+  --dur-med: 260ms;
+  --dur-reveal: 480ms;
+
+  /* ---------- SEMANTIC: surfaces ---------- */
+  --page-bg:        var(--bg-abyss);
+  --surface-primary: var(--bg-deep);
+  --surface-panel:   var(--bg-base);
+  --surface-raised:  var(--bg-raised);
+  --surface-hover:   var(--bg-overlay);
+  --surface-inset:   oklch(11% 0.012 236);   /* wells: code, artifact bodies */
+
+  /* ---------- SEMANTIC: lines ---------- */
+  --border-subtle: oklch(30% 0.015 226);
+  --border-strong: oklch(42% 0.018 224);
+  --grid-line:     oklch(100% 0 0 / 0.045);  /* blueprint grid strokes */
+  --tick-mark:     oklch(100% 0 0 / 0.14);
+
+  /* ---------- SEMANTIC: text roles ---------- */
+  --h1: var(--text-d1);
+  --h2: var(--text-d2);
+  --h3: var(--text-h1);
+  --body: var(--text-body);
+  --caption: var(--text-small);
+
+  --label-font: var(--font-mono);
+  --label-size: var(--text-micro);
+  --label-tracking: 0.14em;
+
+  --artifact-font: var(--font-mono);       /* generated SOT content */
+  --artifact-size: 13.5px;
+  --artifact-leading: 1.65;
+
+  /* ---------- SEMANTIC: interactive states ---------- */
+  --focus-ring: 0 0 0 2px var(--bg-abyss), 0 0 0 4px var(--lime);
+  --hover-shift: translateX(2px);
+
+  /* ---------- SEMANTIC: glow (sparing!) ---------- */
+  --glow-lime: 0 0 24px oklch(89% 0.235 129 / 0.18);
+}
+
+/* Light is intentionally not shipped: KEEL is a dark-native product surface.
+   If a light mode is ever needed, derive it — do not invert. */

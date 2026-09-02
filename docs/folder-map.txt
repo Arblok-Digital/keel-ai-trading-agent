@@ -1,0 +1,92 @@
+ai-trading-agent/
+├── package.json # Root package definition with Hono, Drizzle, Viem, @solana/web3.js, and WS dependencies
+├── drizzle.config.ts # Drizzle ORM diffing configuration (authoritative migrations live in db/migrations/)
+├── tsconfig.json # TypeScript strict compiler settings (noUncheckedIndexedAccess)
+├── eslint.config.js # Flat ESLint config; bans Date.now(), bare new Date(), and any outside TimeService
+├── vitest.config.ts # Unit + risk + integration test orchestration
+├── docker-compose.yml # PostgreSQL 16 database and Redis service definitions
+├── .env.example # Environment variable template with vault keys and RPC endpoints
+├── db/
+│   ├── schema.ts # Drizzle tables incl. trade_decisions, decision_transitions, audit_logs.hash
+│   ├── rls.sql # Session-variable RLS policies, append-only triggers, order FSM guard, seeds
+│   └── migrations/ # Hand-authored SQL migrations (schema DDL + rls.sql in one file)
+├── src/
+│   ├── index.ts # API server entry point (Hono) and lifecycle shutdown hooks
+│   ├── worker.ts # Background worker process for ingestion, reconciliation, and signals
+│   ├── config/
+│   │   ├── env.ts # Typed runtime environment validation via Zod
+│   │   └── risk-constants.ts # Hard-coded risk parameters (drawdown, max orders, position limits)
+│   ├── db/
+│   │   ├── index.ts # PostgreSQL connection pool and Drizzle client initialization
+│   │   ├── actor.ts # withActorContext(): SET LOCAL app.current_user_id wrapper for every query
+│   │   └── migrate.ts # Custom migrator applying db/migrations/*.sql including rls.sql
+│   ├── auth/
+│   │   ├── passwords.ts # scrypt password hashing for human principals
+│   │   ├── jwt.ts # EdDSA (Ed25519) access-token signing/verification via jose
+│   │   ├── sessions.ts # Refresh token rotation with reuse revocation (7d sliding)
+│   │   └── mfa.ts # RFC 6238 TOTP step-up codes for owner mutations
+│   ├── middleware/
+│   │   ├── auth.ts # requireRole() RBAC from docs/security.md matrix + internal HMAC guard
+│   │   ├── validation.ts # drizzle-zod request validation (strip unknown, 422) + 32KB body cap
+│   │   └── ratelimit.ts # Redis token bucket with in-memory fallback
+│   ├── routes/
+│   │   ├── auth.routes.ts # /api/v1/auth/login|refresh|logout
+│   │   ├── keys.routes.ts # /api/v1/system/credentials (owner + MFA)
+│   │   ├── risk.routes.ts # /api/v1/system/kill-switch, /system/mode, /system/reconciliation
+│   │   ├── decisions.routes.ts # /api/v1/decisions list + idempotent execute
+│   │   ├── positions.routes.ts # /api/v1/positions
+│   │   ├── orders.routes.ts # /api/v1/orders
+│   │   ├── feed.routes.ts # /api/v1/tokens/early-feed
+│   │   └── ws.routes.ts # WebSocket endpoint for live dashboard telemetry via Redis pub/sub
+│   ├── serializers/
+│   │   └── serialize.ts # numeric-string -> JSON number coercion at API boundary
+│   ├── types/
+│   │   ├── exchange.ts # Normalized orderbook, trade, and balance payload interfaces
+│   │   └── signals.ts # MM signal contracts, MTF vectors, and risk assessment schemas
+│   └── services/
+│       ├── ingestion/
+│       │   ├── cex-stream.ts # Binance WebSocket stream for orderbook depth and trades
+│       │   ├── dex-indexer.ts # Onchain EVM (Uniswap V3) pool liquidity and swap logs via Viem
+│       │   ├── raydium-indexer.ts # Solana/Raydium pool state and swap log ingestion via @solana/web3.js
+│       │   ├── time-sync.ts # TimeService: Binance server-time sync, staleness checker (>1500ms)
+│       │   └── narrative-velocity.ts # Composite early score calculator and social/volume velocity
+│       ├── mm-brain/
+│       │   ├── confluence-matrix.ts # Multi-timeframe bias validation (M15, H1, H4, D1)
+│       │   ├── smart-money-tracker.ts # Smart money wallet flow, accumulation, and bridge shifts
+│       │   ├── liquidity-mapper.ts # Resting liquidity, stop cluster detection, and retail trap filters
+│       │   └── signal-generator.ts # Composite signal synthesizer rejecting naked indicators
+│       ├── risk/
+│       │   ├── gatekeeper.ts # Synchronous pre-trade evaluator with FOR UPDATE row locking
+│       │   ├── drawdown-monitor.ts # High-water daily 3% drawdown calculation and auto-halt
+│       │   └── kill-switch.ts # Global panic trigger canceling CEX orders and halting dispatcher
+│       ├── execution/
+│       │   ├── exchange-adapter.ts # Venue-neutral adapter contract (placeOrder/query/cancel/time/balances)
+│       │   ├── id-generator.ts # Deterministic clientOrderId generator (cID-${decisionId})
+│       │   ├── binance-spot.ts # Spot-only CEX execution adapter with idempotent timeout query
+│       │   ├── uniswap-v3.ts # EVM/Viem router swap adapter with slippage guard
+│       │   ├── raydium.ts # Solana/@solana/web3.js Raydium swap adapter with slippage guard
+│       │   ├── paper-adapter.ts # Simulation fill engine with identical adapter interface
+│       │   ├── vault.ts # AES-256-GCM encrypt-at-rest decryptor with log-scrubbing guarantees
+│       │   └── executor.ts # Persist-before-execute orchestrator (decision -> transition -> dispatch)
+│       ├── reconciliation/
+│       │   ├── ledger-sync.ts # 15-second loop reconciling DB records with exchange balances
+│       │   └── discrepancy-handler.ts # Anomaly detector halting trading on balance mismatch
+│       ├── audit/
+│       │   ├── audit-service.ts # AuditService.recordInTx() same-transaction writes + SHA-256 hashing
+│       │   └── hash-verifier.ts # Scheduled chain verification; discrepancy = lockdown
+│       ├── archival/
+│       │   └── retention-export.ts # Monthly export of >90d audit records to WORM storage
+│       └── notifications/
+│           └── telegram.ts # Bot dispatcher with per-incident dedup/debounce for risk breaches
+└── tests/
+    ├── risk-gatekeeper.test.ts # npm run test:risk — all limits, race concurrency, kill switch
+    ├── drawdown.test.ts # Drawdown boundary and auto-halt behavior
+    ├── idempotency.test.ts # Deterministic clientOrderId and timeout recovery semantics
+    ├── vault.test.ts # AES-256-GCM round trip, scrubber, scope rejection
+    ├── audit-hash.test.ts # Deterministic audit hashing and tamper detection
+    ├── signals.test.ts # Naked indicator rejection and MM thesis validation
+    ├── staleness.test.ts # >1500ms tick rejection against TimeService
+    ├── mfa.test.ts # TOTP generation/verification windows
+    ├── jwt-sessions.test.ts # Access/refresh lifecycle and reuse revocation
+    └── integration/ # Postgres-backed suites; auto-skipped when DB unreachable
+        └── rls-matrix.test.ts # Role x table allow/deny matrix from docs/security.md

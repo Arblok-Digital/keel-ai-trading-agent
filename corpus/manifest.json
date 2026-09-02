@@ -1,0 +1,52 @@
+{
+  "project": "ai-trading-agent",
+  "embed_model": "text-embedding-3-small",
+  "chunk_size": 800,
+  "overlap": 120,
+  "sources": [
+    {
+      "id": "binance-spot-api-v3-spec",
+      "type": "vendor-docs",
+      "description": "Binance Spot REST API and WebSocket streams specification covering order placement, server-time sync, clientOrderId handling, and rate limits.",
+      "why_needed": "Required for implementing the deterministic exchange adapter, idempotent order recovery via clientOrderId, and exchange server-time synchronization.",
+      "est_chunks": 45
+    },
+    {
+      "id": "drizzle-orm-zod-schema-guide",
+      "type": "vendor-docs",
+      "description": "Drizzle ORM schema declaration patterns, PostgreSQL Row-Level Security integration, and runtime validation via drizzle-zod.",
+      "why_needed": "Enforces contract-first schema discipline across database entities, decision logs, and Hono route request/response validations.",
+      "est_chunks": 30
+    },
+    {
+      "id": "market-maker-liquidity-sop",
+      "type": "internal-doc",
+      "description": "Standard operating procedure for institutional market-maker reasoning, liquidity hunt identification, accumulation/distribution detection, and multi-timeframe bias.",
+      "why_needed": "Provides the knowledge base for generating and scoring institutional spot trade theses while strictly rejecting retail-default naked indicator signals.",
+      "est_chunks": 35
+    },
+    {
+      "id": "pre-trade-risk-and-killswitch-sop",
+      "type": "internal-doc",
+      "description": "Architecture and operational specifications for zero-bypass pre-trade risk checks, concurrency locks, drawdown limits, staleness thresholds, and kill-switch execution.",
+      "why_needed": "Guides agent logic in enforcing hard boundaries (5 open positions, 10 orders/hr, 3% daily drawdown, 1500ms staleness limit) before any order dispatch.",
+      "est_chunks": 25
+    },
+    {
+      "id": "idempotent-execution-reconciliation-sop",
+      "type": "internal-doc",
+      "description": "Protocol for persist-before-execute state lifecycle, terminal decision transitions, and continuous 15-second ledger-to-exchange balance reconciliation.",
+      "why_needed": "Ensures zero duplicate orders during API timeouts and immediate trading halts upon position or balance discrepancies.",
+      "est_chunks": 30
+    },
+    {
+      "id": "dex-pool-analytics-and-money-flow-guide",
+      "type": "vendor-docs",
+      "description": "DEX liquidity pool telemetry, smart-money wallet tracking heuristics, bridge flow monitoring, and new pool launch evaluation criteria.",
+      "why_needed": "Supplies onchain data ingestion schemas and algorithms for scoring early-stage token opportunities before technical breakout confirmation.",
+      "est_chunks": 40
+    }
+  ],
+  "total_chunks": 205,
+  "total_tokens": 133250
+}

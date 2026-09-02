@@ -1,0 +1,521 @@
+openapi: 3.1.0
+info:
+  title: AI Trading Agent Autonomous Spot Execution API
+  version: 1.0.0
+  description: High-integrity spot-only market-maker trading agent API with strict persist-before-execute audit trail.
+paths:
+  /api/v1/auth/login:
+    post:
+      summary: Authenticate a human principal and issue session cookies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Session established (access + refresh httpOnly cookies)
+        '401':
+          description: Invalid credentials
+  /api/v1/auth/refresh:
+    post:
+      summary: Rotate refresh token (sliding window with reuse revocation)
+      responses:
+        '200':
+          description: New access and refresh cookies issued
+        '401':
+          description: Missing, expired, or reused refresh token
+  /api/v1/auth/logout:
+    post:
+      summary: Revoke the current session family and clear cookies
+      responses:
+        '200':
+          description: Session revoked
+  /api/v1/tokens/early-feed:
+    get:
+      summary: Get early detection token opportunities
+      parameters:
+        - name: minCompositeScore
+          in: query
+          schema:
+            type: number
+            minimum: 0
+            maximum: 100
+      responses:
+        '200':
+          description: Ranked early detection candidates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EarlyDetectionToken'
+  /api/v1/decisions:
+    get:
+      summary: List append-only market maker decisions
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Audit log of MM decisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TradeDecision'
+  /api/v1/decisions/{decisionId}/execute:
+    post:
+      summary: Idempotently execute an approved decision
+      parameters:
+        - name: decisionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Order dispatched or state reconciled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '409':
+          description: Decision already terminal or risk-rejected
+  /api/v1/positions:
+    get:
+      summary: List open spot positions
+      responses:
+        '200':
+          description: Active positions with risk parameters and full decision traceability
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Position'
+  /api/v1/auth/me:
+    get:
+      summary: Current actor from session cookie
+      responses:
+        '200': { description: Actor id + role }
+        '401': { description: Unauthenticated }
+  /api/v1/health:
+    get:
+      summary: Liveness + db + timeSync
+      responses:
+        '200': { description: Health payload }
+  /api/v1/system/data-sources:
+    get:
+      summary: MultiSourceFeedManager state (depth/trade active sources)
+      responses:
+        '200': { description: DataSourceState + serverTime }
+  /api/v1/scanner/early-all:
+    get:
+      summary: All-ticker CEX MM early scan (Bybit ccxt -> Bybit REST -> Gate REST -> CoinGecko, Gate orderbook enrich top10)
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 100 } }
+      responses:
+        '200':
+          description: { compass: EarlyCandidate[5], top: EarlyCandidate[], allCount, source, generatedAt }
+  /api/v1/decisions/{decisionId}/transitions:
+    get:
+      summary: List decision_transitions for a decision
+      parameters:
+        - { name: decisionId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Transition list }
+  /api/v1/market/orderbook:
+    get:
+      summary: Gate.io orderbook analysis (imbalance, walls, ATR, plan entry/SL/TP)
+      parameters:
+        - { name: symbol, in: query, schema: { type: string, default: BTCUSDT } }
+      responses:
+        '200': { description: OrderbookAnalysis }
+        '503': { description: orderbook_unavailable }
+  /api/v1/market/klines:
+    get:
+      summary: Binance Vision klines 15m/1h/4h/1d
+      parameters:
+        - { name: symbol, in: query, schema: { type: string, default: BTCUSDT } }
+      responses:
+        '200': { description: Klines payload }
+  /api/v1/market/tape:
+    get:
+      summary: Gate.io recent trades tape
+      parameters:
+        - { name: symbol, in: query, schema: { type: string, default: BTCUSDT } }
+      responses:
+        '200': { description: Tape payload }
+  /api/v1/orders/manual:
+    post:
+      summary: Owner manual BUY/SELL — creates decision via gatekeeper then queues via Redis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [symbol, action]
+              properties:
+                symbol: { type: string }
+                action: { type: string, enum: [BUY, SELL] }
+                sizePct: { type: number, minimum: 2, maximum: 5, default: 3 }
+      responses:
+        '202': { description: Queued decisionId }
+        '422': { description: risk_rejected }
+  /api/v1/system/credentials:
+    post:
+      summary: Store encrypted spot credential (owner+MFA)
+      responses:
+        '201': { description: CredentialView }
+        '422': { description: spot_only_violation }
+  /api/v1/system/mode:
+    get: { summary: Get trading mode }
+    post: { summary: Toggle PAPER/LIVE (owner+MFA) }
+  /api/v1/system/kill-switch:
+    post: { summary: Engage kill switch (owner/system_agent) }
+  /api/v1/system/reconciliation:
+    get: { summary: Latest ReconciliationReport }
+  /api/v1/ws:
+    get: { summary: WebSocket telemetry (auth required, hello + agentEvents) }
+  /api/v1/orders:
+    get:
+      summary: List idempotent orders
+      responses:
+        '200':
+          description: Order audit history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+  /api/v1/system/credentials:
+    post:
+      summary: Store spot-only exchange credentials (AES-256-GCM vault)
+      security:
+        - ownerMfaCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [venue, label, apiKey, apiSecret]
+              properties:
+                venue:
+                  $ref: '#/components/schemas/Venue'
+                label:
+                  type: string
+                apiKey:
+                  type: string
+                apiSecret:
+                  type: string
+                scopes:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Credential stored after spot-only permission probe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialView'
+        '422':
+          description: Key possesses withdrawal/margin/transfer scope - agent lockdown triggered
+  /api/v1/system/mode:
+    get:
+      summary: Get current execution mode (PAPER/LIVE)
+      responses:
+        '200':
+          description: Current mode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMode'
+    post:
+      summary: Toggle execution mode (owner only, WebAuthn/MFA step-up header required)
+      security:
+        - ownerMfaCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode]
+              properties:
+                mode:
+                  type: string
+                  enum: [PAPER, LIVE]
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Mode switched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMode'
+        '403':
+          description: Missing step-up MFA header or insufficient role
+  /api/v1/system/kill-switch:
+    post:
+      summary: Trigger emergency trading halt and cancel orders (DEX dispatch halts; on-chain swaps cannot be cancelled)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: System halted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cancelledOrdersCount:
+                    type: integer
+                  eventId:
+                    type: string
+                    format: uuid
+  /api/v1/system/reconciliation:
+    get:
+      summary: Fetch latest ledger and exchange reconciliation report
+      responses:
+        '200':
+          description: Balance and position discrepancy status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReconciliationReport'
+components:
+  securitySchemes:
+    ownerMfaCookieAuth:
+      type: apiKey
+      in: header
+      name: x-mfa-code
+      description: TOTP/WebAuthn step-up code required for credential and live-mode mutations.
+  schemas:
+    Venue:
+      type: string
+      enum: [BINANCE_SPOT, UNISWAP_V3, RAYDIUM]
+    EarlyDetectionToken:
+      type: object
+      required: [symbol, venue, compositeScore, smartMoneyFlow, liquidityDepthUsd, mtfAlignment]
+      properties:
+        symbol:
+          type: string
+        venue:
+          $ref: '#/components/schemas/Venue'
+        compositeScore:
+          type: number
+        smartMoneyFlow:
+          type: string
+          enum: [ACCUMULATION, DISTRIBUTION, NEUTRAL]
+        liquidityDepthUsd:
+          type: number
+        narrativeVelocity:
+          type: number
+        mtfAlignment:
+          type: boolean
+        detectedAt:
+          type: string
+          format: date-time
+    MtfBias:
+      type: object
+      required: [m15, h1, h4, d1]
+      properties:
+        m15:
+          type: string
+          enum: [BULLISH, BEARISH, NEUTRAL]
+        h1:
+          type: string
+          enum: [BULLISH, BEARISH, NEUTRAL]
+        h4:
+          type: string
+          enum: [BULLISH, BEARISH, NEUTRAL]
+        d1:
+          type: string
+          enum: [BULLISH, BEARISH, NEUTRAL]
+    TradeDecision:
+      type: object
+      required: [id, symbol, venue, action, mmThesis, smartMoneyFlow, mtfBias, liquidityDepthUsd, stopLossPct, takeProfitPct, sizePct, riskPassed, terminalState]
+      properties:
+        id:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        venue:
+          $ref: '#/components/schemas/Venue'
+        action:
+          type: string
+          enum: [BUY, SELL, HOLD]
+        mmThesis:
+          type: string
+        smartMoneyFlow:
+          type: string
+          enum: [ACCUMULATION, DISTRIBUTION, NEUTRAL]
+        mtfBias:
+          $ref: '#/components/schemas/MtfBias'
+        liquidityDepthUsd:
+          type: number
+        stopLossPct:
+          type: number
+        takeProfitPct:
+          type: number
+        sizePct:
+          type: number
+        riskPassed:
+          type: boolean
+        riskReasons:
+          type: array
+          items:
+            type: string
+        terminalState:
+          type: string
+          enum: [PENDING, EXECUTED, REJECTED, FAILED]
+        createdAt:
+          type: string
+          format: date-time
+    Order:
+      type: object
+      required: [clientOrderId, decisionId, venue, symbol, side, requestedQty, status, serverTime]
+      properties:
+        clientOrderId:
+          type: string
+        decisionId:
+          type: string
+          format: uuid
+        venue:
+          $ref: '#/components/schemas/Venue'
+        symbol:
+          type: string
+        side:
+          type: string
+          enum: [BUY, SELL]
+        requestedQty:
+          type: number
+        executedQty:
+          type: number
+        avgFillPrice:
+          type: number
+          nullable: true
+        externalRef:
+          type: string
+          nullable: true
+          description: Exchange order id or DEX transaction signature
+        status:
+          type: string
+          enum: [PENDING, PARTIALLY_FILLED, FILLED, REJECTED, CANCELLED]
+        serverTime:
+          type: integer
+    Position:
+      type: object
+      required: [id, symbol, venue, decisionId, orderId, sizePct, entryPrice, stopLossPrice, takeProfitPrice, currentPnlPct]
+      properties:
+        id:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        venue:
+          $ref: '#/components/schemas/Venue'
+        decisionId:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        sizePct:
+          type: number
+        entryPrice:
+          type: number
+        stopLossPrice:
+          type: number
+        takeProfitPrice:
+          type: number
+        currentPnlPct:
+          type: number
+        isOpen:
+          type: boolean
+    ReconciliationReport:
+      type: object
+      required: [timestamp, isSynced, localBalanceUsd, exchangeBalanceUsd, discrepancyUsd]
+      properties:
+        timestamp:
+          type: integer
+        isSynced:
+          type: boolean
+        localBalanceUsd:
+          type: number
+        exchangeBalanceUsd:
+          type: number
+        discrepancyUsd:
+          type: number
+        breakdown:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              localUsd:
+                type: number
+              exchangeUsd:
+                type: number
+    CredentialView:
+      type: object
+      required: [id, venue, label, keyFingerprint, probePassed]
+      properties:
+        id:
+          type: string
+          format: uuid
+        venue:
+          $ref: '#/components/schemas/Venue'
+        label:
+          type: string
+        keyFingerprint:
+          type: string
+        probePassed:
+          type: boolean
+        scopes:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+    SystemMode:
+      type: object
+      required: [mode, updatedAt]
+      properties:
+        mode:
+          type: string
+          enum: [PAPER, LIVE]
+        updatedBy:
+          type: string
+          format: uuid
+        updatedAt:
+          type: string
+          format: date-time

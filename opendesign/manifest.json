@@ -1,0 +1,69 @@
+﻿{
+    "generated":  "2026-08-27T08:03:58.9530581+07:00",
+    "sections":  [
+                     {
+                         "label":  "Mockups",
+                         "groups":  [
+                                        {
+                                            "slug":  "ai-trading-terminal",
+                                            "files":  [
+                                                          {
+                                                              "path":  "mockups/ai-trading-terminal/index.html",
+                                                              "label":  "index.html"
+                                                          }
+                                                      ]
+                                        },
+                                        {
+                                            "slug":  "busana-retail",
+                                            "files":  [
+                                                          {
+                                                              "path":  "mockups/busana-retail/index.html",
+                                                              "label":  "index.html"
+                                                          }
+                                                      ]
+                                        },
+                                        {
+                                            "slug":  "keel-concept",
+                                            "files":  [
+                                                          {
+                                                              "path":  "mockups/keel-concept/index.html",
+                                                              "label":  "index.html"
+                                                          }
+                                                      ]
+                                        }
+                                    ],
+                         "id":  "mockups"
+                     },
+                     {
+                         "label":  "Design Systems",
+                         "groups":  [
+                                        {
+                                            "slug":  "keel",
+                                            "files":  [
+                                                          {
+                                                              "path":  "design-systems/keel/README.md",
+                                                              "label":  "README.md"
+                                                          },
+                                                          {
+                                                              "path":  "design-systems/keel/SKILL.md",
+                                                              "label":  "SKILL.md"
+                                                          },
+                                                          {
+                                                              "path":  "design-systems/keel/tokens/colors_and_type.css",
+                                                              "label":  "colors_and_type.css"
+                                                          },
+                                                          {
+                                                              "path":  "design-systems/keel/brand/style-notes.md",
+                                                              "label":  "style-notes.md"
+                                                          },
+                                                          {
+                                                              "path":  "design-systems/keel/brand/voice-and-tone.md",
+                                                              "label":  "voice-and-tone.md"
+                                                          }
+                                                      ]
+                                        }
+                                    ],
+                         "id":  "design-systems"
+                     }
+                 ]
+}

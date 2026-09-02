@@ -1,0 +1,46 @@
+{
+  "name": "ai-trading-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx --env-file=.env --watch src/index.ts",
+    "worker": "tsx --env-file=.env src/worker.ts",
+    "db:generate": "drizzle-kit generate --name autodiff",
+    "db:migrate": "tsx --env-file=.env src/db/migrate.ts",
+    "db:studio": "drizzle-kit studio",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "node --env-file=.env ./node_modules/vitest/dist/cli.js run",
+    "test:risk": "node --env-file=.env ./node_modules/vitest/dist/cli.js run tests/risk-gatekeeper.test.ts tests/drawdown.test.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "@hono/node-ws": "^1.0.8",
+    "@solana/web3.js": "^1.95.3",
+    "ccxt": "^4.4.87",
+    "drizzle-orm": "^0.36.4",
+    "drizzle-zod": "^0.5.1",
+    "hono": "^4.6.10",
+    "ioredis": "^5.4.2",
+    "jose": "^5.9.6",
+    "pg": "^8.13.1",
+    "viem": "^2.21.44",
+    "ws": "^8.18.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/pg": "^8.11.10",
+    "@types/ws": "^8.5.13",
+    "drizzle-kit": "^0.28.1",
+    "eslint": "^9.16.0",
+    "tsx": "^4.19.2",
+    "typescript": "5.9",
+    "typescript-eslint": "^8.16.0",
+    "vitest": "^2.1.8"
+  }
+}

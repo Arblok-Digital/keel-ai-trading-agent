@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KEEL • Busana Retail Engine — POS & Multi-Outlet</title>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../../design-systems/keel/tokens/colors_and_type.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--page-bg);
+  color:var(--fg-hi);
+  font-family:var(--font-ui);
+  font-size:15px;
+  line-height:1.5;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+body::before{
+  content:"";
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size:32px 32px;
+  pointer-events:none;
+  z-index:-1;
+}
+a{color:inherit}
+button{font-family:inherit}
+.mono{font-family:var(--font-mono)}
+/* topbar */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  background:var(--bg-deep);
+  border-bottom:1px solid var(--border-subtle);
+  display:flex;align-items:center;justify-content:space-between;
+  height:52px;padding:0 20px;
+}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.keel-mark{
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--font-mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;
+}
+.keel-mark b{color:var(--lime);font-weight:700}
+.topbar-project{
+  display:flex;align-items:center;gap:10px;
+  border-left:1px solid var(--border-subtle);padding-left:16px;
+}
+.project-name{font-weight:600;font-size:13px;letter-spacing:-0.01em}
+.project-slug{font-family:var(--font-mono);font-size:10px;color:var(--fg-low);letter-spacing:0.08em}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.role-pill{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;
+  border:1px solid var(--border-strong);padding:4px 8px;border-radius:999px;color:var(--fg-mid);
+}
+.role-pill.owner{border-color:var(--lime);color:var(--lime)}
+.shift-badge{
+  display:flex;align-items:center;gap:8px;
+  background:var(--bg-base);border:1px solid var(--border-subtle);border-radius:6px;padding:6px 10px;
+}
+.shift-dot{width:8px;height:8px;border-radius:999px;background:var(--lime);box-shadow:var(--glow-lime)}
+.shift-dot.closed{background:var(--amber);box-shadow:none}
+.shift-meta{font-family:var(--font-mono);font-size:11px;color:var(--fg-mid)}
+.shift-meta strong{color:var(--fg-hi)}
+.btn{
+  appearance:none;border:1px solid var(--border-strong);background:var(--surface-panel);
+  color:var(--fg-hi);padding:8px 14px;border-radius:6px;font-size:13px;font-weight:500;
+  cursor:pointer;transition:all var(--dur-fast) var(--ease-out);display:inline-flex;align-items:center;gap:8px;
+}
+.btn:hover{background:var(--surface-hover);transform:translateY(-1px)}
+.btn:active{transform:none}
+.btn-primary{
+  background:var(--lime);color:oklch(15% 0.02 130);border-color:var(--lime);font-weight:700;
+  box-shadow:var(--glow-lime);
+}
+.btn-primary:hover{background:var(--lime-deep)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--fg-mid)}
+.btn-ghost:hover{background:var(--bg-base);color:var(--fg-hi)}
+.btn-sm{padding:6px 10px;font-size:12px}
+.btn:disabled{opacity:0.45;pointer-events:none}
+/* lineage strip */
+.lineage{
+  background:var(--bg-base);border-bottom:1px solid var(--border-subtle);
+  display:flex;align-items:center;gap:0;padding:0 20px;height:36px;overflow-x:auto;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg-low);
+}
+.lineage span{white-space:nowrap;padding:0 10px;display:flex;align-items:center;gap:8px}
+.lineage .dot{width:6px;height:6px;border-radius:999px;background:var(--border-strong)}
+.lineage .dot.ok{background:var(--lime)}
+.lineage .dot.warn{background:var(--amber)}
+.lineage b{color:var(--fg-hi);font-weight:700}
+/* layout */
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 88px)}
+.sidebar{
+  background:var(--surface-primary);border-right:1px solid var(--border-subtle);
+  padding:16px 12px;position:sticky;top:52px;height:calc(100vh - 52px);overflow:auto;
+}
+.nav-label{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);
+  margin:14px 0 8px 8px;
+}
+.nav-label:first-child{margin-top:4px}
+.nav-item{
+  width:100%;text-align:left;display:flex;align-items:center;gap:10px;
+  padding:9px 10px;border-radius:6px;border:1px solid transparent;
+  background:transparent;color:var(--fg-mid);font-size:13px;font-weight:500;cursor:pointer;
+  transition:all var(--dur-fast) var(--ease-out);
+}
+.nav-item:hover{background:var(--bg-base);color:var(--fg-hi);border-color:var(--border-subtle)}
+.nav-item.active{background:var(--bg-base);color:var(--fg-hi);border-color:var(--border-strong);box-shadow:inset 0 0 0 1px var(--border-subtle)}
+.nav-item.active .nav-num{color:var(--lime)}
+.nav-num{font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;color:var(--fg-low)}
+.nav-item small{margin-left:auto;font-family:var(--font-mono);font-size:10px;background:var(--bg-abyss);border:1px solid var(--border-subtle);padding:2px 6px;border-radius:999px}
+.main{padding:20px 22px 40px;max-width:1440px}
+.panel{
+  background:var(--surface-panel);border:1px solid var(--border-subtle);border-radius:10px;
+  position:relative;overflow:hidden;
+}
+.panel::before,.panel::after{
+  content:"+";position:absolute;font-family:var(--font-mono);font-size:10px;color:var(--tick-mark);line-height:1;
+}
+.panel::before{top:6px;left:8px}
+.panel::after{top:6px;right:8px}
+.panel-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--border-subtle);
+}
+.panel-title{font-family:var(--font-mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-low)}
+.panel-title b{color:var(--fg-hi)}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{
+  background:var(--surface-panel);border:1px solid var(--border-subtle);border-radius:10px;padding:14px 16px;position:relative;
+}
+.kpi::before{content:"+";position:absolute;top:6px;right:8px;font-family:var(--font-mono);font-size:10px;color:var(--tick-mark)}
+.kpi-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-low);margin-bottom:8px}
+.kpi-value{font-family:var(--font-display);font-weight:700;font-size:22px;letter-spacing:-0.02em}
+.kpi-sub{font-family:var(--font-mono);font-size:11px;color:var(--fg-mid);margin-top:4px}
+.kpi-value.lime{color:var(--lime)}
+.kpi-value.amber{color:var(--amber)}
+/* POS layout */
+.pos-grid{display:grid;grid-template-columns:1.45fr 0.85fr;gap:16px}
+.cart-panel{display:flex;flex-direction:column}
+.scan-bar{
+  display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border-subtle);background:var(--bg-deep);
+}
+.scan-input{
+  flex:1;background:var(--surface-inset);border:1px solid var(--border-subtle);border-radius:6px;
+  padding:10px 12px;color:var(--fg-hi);font-family:var(--font-mono);font-size:13px;outline:none;
+}
+.scan-input:focus{border-color:var(--lime);box-shadow:var(--focus-ring)}
+.scan-input::placeholder{color:var(--fg-faint)}
+.cart-lines{flex:1;overflow:auto;max-height:420px}
+.cart-row{
+  display:grid;grid-template-columns:1fr 90px 90px 36px;gap:10px;
+  padding:12px 16px;border-bottom:1px solid var(--border-subtle);align-items:center;
+}
+.cart-row:hover{background:var(--surface-hover)}
+.cart-name{font-weight:600;font-size:13px}
+.cart-meta{font-family:var(--font-mono);font-size:11px;color:var(--fg-low);margin-top:2px}
+.cart-price{font-family:var(--font-mono);font-size:12px;text-align:right}
+.cart-qty{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.qty-btn{width:26px;height:26px;border-radius:4px;border:1px solid var(--border-subtle);background:var(--bg-base);color:var(--fg-hi);cursor:pointer;display:grid;place-items:center;font-size:14px}
+.qty-btn:hover{background:var(--bg-overlay)}
+.totals{padding:14px 16px;background:var(--bg-deep);border-top:1px solid var(--border-subtle)}
+.total-row{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;color:var(--fg-mid);margin-bottom:6px}
+.total-row.grand{color:var(--fg-hi);font-weight:700;font-size:14px;border-top:1px dashed var(--border-subtle);padding-top:8px;margin-top:8px}
+.receipt{
+  background:var(--surface-inset);border:1px dashed var(--border-strong);border-radius:8px;padding:14px;
+  font-family:var(--font-mono);font-size:11px;line-height:1.6;color:var(--fg-mid);
+}
+.receipt b{color:var(--fg-hi)}
+.receipt-line{display:flex;justify-content:space-between}
+.variant-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px}
+.variant-card{
+  border:1px solid var(--border-subtle);background:var(--bg-base);border-radius:8px;padding:10px;cursor:pointer;
+  transition:all var(--dur-fast) var(--ease-out);position:relative;
+}
+.variant-card:hover{border-color:var(--lime);transform:translateY(-1px)}
+.variant-card.selected{border-color:var(--lime);box-shadow:var(--glow-lime)}
+.variant-sku{font-family:var(--font-mono);font-size:10px;color:var(--fg-low);letter-spacing:0.06em}
+.variant-name{font-weight:600;font-size:13px;margin:4px 0 2px}
+.variant-stock{font-family:var(--font-mono);font-size:11px}
+.variant-stock.low{color:var(--amber)}
+.variant-stock.ok{color:var(--lime)}
+.stock-table{width:100%;border-collapse:collapse;font-size:13px}
+.stock-table th{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--fg-low);text-align:left;padding:10px 14px;border-bottom:1px solid var(--border-subtle);background:var(--bg-deep)
+}
+.stock-table td{padding:10px 14px;border-bottom:1px solid var(--border-subtle);color:var(--fg-mid)}
+.stock-table tr:hover td{background:var(--surface-hover)}
+.badge{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
+  padding:3px 7px;border-radius:999px;border:1px solid var(--border-subtle);display:inline-flex;align-items:center;gap:6px;
+}
+.badge-lime{border-color:var(--lime);color:var(--lime);background:oklch(89% 0.235 129 / 0.08)}
+.badge-amber{border-color:var(--amber);color:var(--amber);background:oklch(82% 0.155 78 / 0.08)}
+.badge-rust{border-color:var(--status-stale);color:var(--status-stale)}
+.tabs{display:flex;gap:6px;padding:12px 12px 0}
+.tab{
+  padding:7px 12px;border-radius:999px;border:1px solid var(--border-subtle);
+  font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;background:var(--bg-base);color:var(--fg-mid);cursor:pointer;
+}
+.tab.active{background:var(--lime);color:oklch(15% 0.02 130);border-color:var(--lime);font-weight:700}
+.dialog-overlay{
+  position:fixed;inset:0;background:oklch(0% 0 0 / 0.6);backdrop-filter:blur(6px);
+  display:none;place-items:center;z-index:60;padding:20px;
+}
+.dialog-overlay.open{display:grid}
+.dialog{
+  width:min(520px, 96vw);background:var(--surface-panel);border:1px solid var(--border-strong);border-radius:10px;
+  overflow:hidden;box-shadow:0 20px 60px oklch(0% 0 0 / 0.4);
+}
+.dialog-head{padding:16px;border-bottom:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center;background:var(--bg-deep)}
+.dialog-body{padding:16px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.field label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-low)}
+.input, .select, .textarea{
+  background:var(--surface-inset);border:1px solid var(--border-subtle);border-radius:6px;
+  padding:10px 12px;color:var(--fg-hi);font-family:var(--font-mono);font-size:13px;outline:none;width:100%;
+}
+.input:focus, .select:focus, .textarea:focus{border-color:var(--lime)}
+.textarea{min-height:72px;resize:vertical}
+.notice{
+  border:1px solid var(--amber);background:oklch(82% 0.155 78 / 0.08);color:var(--amber);
+  padding:10px 12px;border-radius:8px;font-family:var(--font-mono);font-size:11px;line-height:1.5;
+}
+.notice.lime{border-color:var(--lime);background:oklch(89% 0.235 129 / 0.08);color:var(--lime)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.transfer-card{padding:12px 14px;border:1px solid var(--border-subtle);border-radius:8px;background:var(--bg-base);display:flex;justify-content:space-between;align-items:center}
+.muted{color:var(--fg-low)}
+.small{font-size:12px}
+.mono-micro{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-low)}
+@media (max-width: 900px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border-subtle)}
+  .pos-grid{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .topbar{height:auto;padding:10px 14px;flex-wrap:wrap;gap:10px}
+}
+.toast{
+  position:fixed;bottom:16px;right:16px;z-index:80;
+  background:var(--lime);color:oklch(15% 0.02 130);font-family:var(--font-mono);font-size:12px;font-weight:700;
+  padding:10px 14px;border-radius:8px;transform:translateY(100px);opacity:0;transition:all 260ms var(--ease-out);pointer-events:none;
+}
+.toast.show{transform:none;opacity:1}
+.empty{
+  padding:32px 20px;text-align:center;color:var(--fg-low);font-family:var(--font-mono);font-size:12px;
+  border:1px dashed var(--border-subtle);border-radius:8px;background:var(--surface-inset);margin:12px;
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="keel-mark"><span style="width:22px;height:22px;display:grid;place-items:center;background:var(--lime);color:oklch(15% 0.02 130);font-weight:800;border-radius:4px;font-size:11px">K</span> <span><b>KEEL</b> — BLUEPRINT TERMINAL</span></div>
+    <div class="topbar-project">
+      <div>
+        <div class="project-name">Busana Retail Engine</div>
+        <div class="project-slug">website-e-comerce-buat-toko-online-busana-muslim • Multi-Outlet POS</div>
+      </div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="role-pill owner" id="rolePill">OWNER • BDO + JKT + WH</span>
+    <div class="shift-badge" id="shiftBadge">
+      <span class="shift-dot closed" id="shiftDot"></span>
+      <div class="shift-meta"><strong id="shiftStatusText">SHIFT CLOSED</strong><br><span id="shiftSub">Login untuk buka shift — terminal terkunci</span></div>
+    </div>
+    <button class="btn btn-primary btn-sm" id="btnOpenShift">Buka Shift</button>
+    <button class="btn btn-sm" id="btnCloseShift" style="display:none">Tutup & Rekonsiliasi</button>
+  </div>
+</header>
+
+<!-- LINEAGE -->
+<div class="lineage">
+  <span><i class="dot ok"></i> <b>01 / CONSTITUTION</b> append-only ledger</span>
+  <span><i class="dot ok"></i> <b>02 / PRD</b> 7 user stories</span>
+  <span><i class="dot ok"></i> <b>03 / ARCHITECTURE</b> 4-layer • row-lock</span>
+  <span><i class="dot ok"></i> <b>04 / CONTRACTS</b> openapi 7 endpoints</span>
+  <span><i class="dot ok"></i> <b>05 / SCHEMA</b> 13 tables • RLS</span>
+  <span><i class="dot warn"></i> <b>06 / CORPUS</b> 97 chunks • drift: none</span>
+  <span style="margin-left:auto;color:var(--fg-faint)">INV-BDO-YYYYMMDD-XXXX • PPN 11% • online-only</span>
+</div>
+
+<div class="shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="nav-label">Retail Operations</div>
+    <button class="nav-item active" data-view="pos"><span class="nav-num">01 /</span> POS Terminal <small>US-02</small></button>
+    <button class="nav-item" data-view="inventory"><span class="nav-num">02 /</span> Inventory <small>matrix</small></button>
+    <button class="nav-item" data-view="transfers"><span class="nav-num">03 /</span> Transfers <small>US-04</small></button>
+    <button class="nav-item" data-view="returns"><span class="nav-num">04 /</span> Returns <small>US-05</small></button>
+    <button class="nav-item" data-view="shifts"><span class="nav-num">05 /</span> Shifts <small>US-01•03</small></button>
+    <div class="nav-label">Consolidated</div>
+    <button class="nav-item" data-view="reports"><span class="nav-num">06 /</span> Reports <small>US-07</small></button>
+    <button class="nav-item" data-view="schema"><span class="nav-num">07 /</span> Schema & RLS</button>
+
+    <div style="margin-top:18px;padding:12px;background:var(--surface-inset);border:1px solid var(--border-subtle);border-radius:8px">
+      <div class="mono-micro" style="margin-bottom:8px">Outlet scoping</div>
+      <select class="select" id="outletSelect" style="font-size:12px;padding:8px">
+        <option value="bdo">Butik Bandung — BDO</option>
+        <option value="jkt">Butik Jakarta — JKT</option>
+        <option value="wh">Central Warehouse — WH</option>
+      </select>
+      <div class="mono-micro" style="margin-top:10px">Role</div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <button class="tab active" data-role="owner" style="flex:1">Owner</button>
+        <button class="tab" data-role="manager" style="flex:1">Manager</button>
+        <button class="tab" data-role="cashier" style="flex:1">Cashier</button>
+      </div>
+      <div style="margin-top:10px;font-family:var(--font-mono);font-size:10px;color:var(--fg-low);line-height:1.5">Cashier & Manager terkunci ke outlet aktif. Owner lintas outlet.</div>
+    </div>
+
+    <div style="margin-top:12px;padding:10px 12px;border:1px dashed var(--amber);border-radius:8px;background:oklch(82% 0.155 78 / 0.06)">
+      <div class="mono-micro" style="color:var(--amber)">Hard rules</div>
+      <div style="font-family:var(--font-mono);font-size:10px;line-height:1.6;color:var(--fg-mid);margin-top:6px">• Append-only: no UPDATE sales<br>• SELECT FOR UPDATE lock<br>• Shift gate sebelum checkout<br>• Reason code wajib untuk refund</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- KPIs -->
+    <div class="kpi-grid" id="kpis">
+      <div class="kpi">
+        <div class="kpi-label">Gross sales — hari ini (BDO)</div>
+        <div class="kpi-value" id="kpiGross">Rp 0</div>
+        <div class="kpi-sub"><span style="color:var(--lime)">●</span> <span id="kpiSalesCount">0 transaksi</span> • PPN 11% included</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Drawer variance</div>
+        <div class="kpi-value amber" id="kpiVariance">Rp 0</div>
+        <div class="kpi-sub" id="kpiVarianceSub">Belum ada shift closed</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Low stock variants</div>
+        <div class="kpi-value amber" id="kpiLow">—</div>
+        <div class="kpi-sub" id="kpiLowSub">Per outlet • threshold ≤ 3</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">In-transit transfers</div>
+        <div class="kpi-value" id="kpiTransit">1</div>
+        <div class="kpi-sub">Butik ↔ Warehouse</div>
+      </div>
+    </div>
+
+    <!-- VIEW: POS -->
+    <section data-panel="pos">
+      <div class="pos-grid">
+        <!-- left: cart -->
+        <div class="panel cart-panel">
+          <div class="panel-head">
+            <div class="panel-title">01 / <b>POS TERMINAL — Butik Bandung</b></div>
+            <span class="badge badge-lime" id="lockBadge">● SHIFT GATE • LOCKED</span>
+          </div>
+          <div class="scan-bar">
+            <input class="scan-input" id="barcodeInput" placeholder="Scan barcode / ketik SKU — mis. GM-SILK-OLV-M • Enter untuk tambah" />
+            <button class="btn btn-primary" id="btnPay">Bayar →</button>
+          </div>
+          <div style="padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--border-subtle);background:var(--bg-base)">
+            <span class="mono-micro" style="align-self:center">Quick add:</span>
+            <button class="btn btn-sm" data-quick="GM-SILK-OLV-M">Gamis Silk Olive M</button>
+            <button class="btn btn-sm" data-quick="HJ-VOAL-NVY">Hijab Voal Navy</button>
+            <button class="btn btn-sm" data-quick="KK-LINEN-PTH-L">Koko Linen Putih L</button>
+            <button class="btn btn-sm" data-quick="AB-JETBLK-S">Abaya Jetblack S</button>
+          </div>
+          <div class="cart-lines" id="cartLines">
+            <div class="empty">Cart kosong — scan barcode atau tap quick add. <br><span class="muted">Harga PPN dihitung per-line (11%).</span></div>
+          </div>
+          <div class="totals" id="totalsBox">
+            <div class="total-row"><span>Subtotal</span><span id="tSubtotal">Rp 0</span></div>
+            <div class="total-row"><span>PPN 11% (per line)</span><span id="tTax">Rp 0</span></div>
+            <div class="total-row"><span>Diskon</span><span id="tDisc">- Rp 0</span></div>
+            <div class="total-row grand"><span>TOTAL</span><span id="tGrand">Rp 0</span></div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <select class="select" id="payMethod" style="flex:1">
+                <option value="cash">Cash</option>
+                <option value="qris">QRIS</option>
+                <option value="debit_card">Debit Card</option>
+                <option value="transfer">Transfer</option>
+              </select>
+              <input class="input" id="cashTendered" placeholder="Tunai diterima (cash)" style="flex:1" type="number" />
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn" id="btnClearCart" style="flex:1">Kosongkan</button>
+              <button class="btn btn-primary" id="btnCheckout" style="flex:1.4">Checkout • Row-Lock</button>
+            </div>
+            <div class="notice" id="shiftGateNotice" style="margin-top:10px">Terminal terkunci — buka shift dulu. Checkout & refund butuh <b>shifts.status = 'open'</b> di outlet ini.</div>
+          </div>
+        </div>
+
+        <!-- right: receipt + variants -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">RECEIPT PREVIEW • <b id="receiptNo">INV-BDO-—</b></div>
+              <span class="mono-micro" id="receiptTime">—</span>
+            </div>
+            <div style="padding:12px">
+              <div class="receipt" id="receiptBox">
+                <div style="text-align:center;margin-bottom:8px"><b>TOKO BUSANA MUSLIM — BDO</b><br>Jl. Ir. H. Djuanda 120, Bandung<br>NPWP 00.000.000.0-000.000</div>
+                <div style="border-top:1px dashed var(--border-strong);margin:8px 0"></div>
+                <div id="receiptLines" style="opacity:0.6">Belum ada item</div>
+                <div style="border-top:1px dashed var(--border-strong);margin:8px 0"></div>
+                <div class="receipt-line"><span>Subtotal</span><span id="rSub">Rp 0</span></div>
+                <div class="receipt-line"><span>PPN</span><span id="rTax">Rp 0</span></div>
+                <div class="receipt-line"><b>Total</b><b id="rGrand">Rp 0</b></div>
+                <div class="receipt-line"><span>Tunai</span><span id="rTender">Rp 0</span></div>
+                <div class="receipt-line"><span>Kembali</span><span id="rChange">Rp 0</span></div>
+                <div style="margin-top:8px;text-align:center;font-size:10px;letter-spacing:0.08em">* sequential • immutable • PPN per-line *</div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:10px">
+                <button class="btn btn-sm" style="flex:1" id="btnPrint">Print</button>
+                <button class="btn btn-sm" style="flex:1" id="btnCopyReceipt">Salin No. Struk</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">VARIANT MATRIX • <b id="variantOutletLabel">BDO stock</b></div>
+              <span class="badge" id="stockHealth">— variants</span>
+            </div>
+            <div class="variant-grid" id="variantGrid"></div>
+            <div style="padding:0 12px 12px;font-family:var(--font-mono);font-size:10px;color:var(--fg-low)">Tap kartu untuk tambah ke cart. Stock diambil dari <b>outlet_stocks</b> dengan <b>SELECT FOR UPDATE</b> saat checkout.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: INVENTORY -->
+    <section data-panel="inventory" style="display:none">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">02 / <b>INVENTORY — per-outlet stock levels</b></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" id="btnAdjust">+ Adjustment</button>
+            <button class="btn btn-sm" id="btnRefreshStock">Refresh</button>
+          </div>
+        </div>
+        <div style="padding:12px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border-subtle);background:var(--bg-deep)">
+          <input class="input" id="stockSearch" placeholder="Cari SKU / nama / warna — mis. silk, navy, koko" style="flex:1;min-width:200px" />
+          <select class="select" id="stockFilter" style="width:180px">
+            <option value="all">Semua level</option>
+            <option value="low">Low ≤ 3</option>
+            <option value="ok">Aman &gt; 3</option>
+            <option value="empty">Habis = 0</option>
+          </select>
+        </div>
+        <div style="overflow:auto">
+          <table class="stock-table" id="stockTable">
+            <thead><tr><th>SKU • Variant</th><th>BDO</th><th>JKT</th><th>WH</th><th>Harga</th><th>Status</th></tr></thead>
+            <tbody id="stockBody"></tbody>
+          </table>
+        </div>
+        <div style="padding:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span class="badge badge-amber">● Low stock = butuh transfer / restock</span>
+          <span class="badge">Append-only ledger: sale / return / transfer_in / transfer_out / adjustment</span>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:16px">
+        <div class="panel-head"><div class="panel-title">STOCK MOVEMENTS • <b>append-only audit</b></div><span class="mono-micro">last 12</span></div>
+        <div style="overflow:auto"><table class="stock-table"><thead><tr><th>Waktu</th><th>Outlet</th><th>SKU</th><th>Type</th><th>Qty</th><th>Prev → Now</th></tr></thead><tbody id="movementBody"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- VIEW: TRANSFERS -->
+    <section data-panel="transfers" style="display:none">
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">03 / <b>INTER-OUTLET TRANSFER</b></div><span class="badge badge-amber">in_transit → received</span></div>
+          <div style="padding:16px">
+            <div class="grid-2">
+              <div class="field"><label>Source</label><select class="select" id="trSource"><option value="wh">WH — Central Warehouse</option><option value="bdo">BDO — Bandung</option><option value="jkt">JKT — Jakarta</option></select></div>
+              <div class="field"><label>Destination</label><select class="select" id="trDest"><option value="bdo">BDO — Bandung</option><option value="jkt">JKT — Jakarta</option><option value="wh">WH — Central Warehouse</option></select></div>
+            </div>
+            <div class="field"><label>Items</label><div id="transferPicker" style="display:grid;gap:6px;max-height:220px;overflow:auto;border:1px solid var(--border-subtle);border-radius:8px;padding:8px;background:var(--surface-inset)"></div></div>
+            <div class="field"><label>Notes</label><textarea class="textarea" id="trNotes" placeholder="Mis. restock gamis olive untuk weekend…"></textarea></div>
+            <button class="btn btn-primary" id="btnCreateTransfer" style="width:100%">Initiate — lock source stock</button>
+            <div class="notice" style="margin-top:10px">Transfer mengunci <b>outlet_stocks @ source</b> via <b>SELECT FOR UPDATE</b>, tulis <b>transfer_out</b> movement, status <b>in_transit</b> sampai destination acknowledge.</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">ACTIVE TRANSFERS</div><span class="mono-micro" id="transferCount">—</span></div>
+          <div id="transferList" style="padding:12px;display:grid;gap:10px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: RETURNS -->
+    <section data-panel="returns" style="display:none">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">04 / <b>IMMUTABLE SALE RETURNS</b> — offsetting document</div><span class="badge badge-rust">no UPDATE sales</span></div>
+        <div style="padding:16px" class="grid-2">
+          <div>
+            <div class="field"><label>Original receipt number</label><input class="input" id="returnReceipt" placeholder="INV-BDO-20250518-0042" /></div>
+            <div class="field"><label>Reason code *</label><select class="select" id="returnReason"><option value="">— pilih —</option><option value="defective_stitch">defective_stitch — jahitan cacat</option><option value="wrong_size">wrong_size — salah ukuran</option><option value="damaged_fabric">damaged_fabric — kain rusak</option><option value="customer_regret">customer_regret — berubah pikiran</option></select></div>
+            <div class="field"><label>Manager auth (jika &gt; threshold)</label><input class="input" id="managerAuth" placeholder="MGR-XXXX (opsional)" /></div>
+            <div style="border:1px solid var(--border-subtle);border-radius:8px;padding:10px;background:var(--surface-inset);margin-bottom:12px">
+              <div class="mono-micro" style="margin-bottom:8px">Return items — centang yang dikembalikan</div>
+              <div id="returnItems" style="display:grid;gap:6px"></div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <label style="display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:12px;color:var(--fg-mid)"><input type="checkbox" id="returnToStock" checked /> kembalikan ke stock</label>
+            </div>
+            <button class="btn btn-primary" id="btnProcessReturn" style="width:100%;margin-top:12px">Proses Refund — buat sale_returns</button>
+            <div class="notice lime" style="margin-top:10px">Refund tidak mengubah sale asli. Sistem tulis <b>sale_returns + sale_return_items + stock_movements(return)</b> + <b>ledger_entries</b> dalam 1 transaksi.</div>
+          </div>
+          <div>
+            <div class="mono-micro" style="margin-bottom:8px">Recent sales (tap untuk isi receipt)</div>
+            <div id="recentSales" style="display:grid;gap:8px;max-height:520px;overflow:auto"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: SHIFTS -->
+    <section data-panel="shifts" style="display:none">
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">05 / <b>SHIFTS — cash drawer audit</b></div><span class="badge badge-lime">US-01 • US-03</span></div>
+          <div style="padding:16px">
+            <div style="display:grid;gap:10px" id="shiftHistory"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">RECONCILIATION PREVIEW</div><span class="mono-micro">expected = float + cash sales − cash refunds</span></div>
+          <div style="padding:16px">
+            <div style="background:var(--surface-inset);border:1px solid var(--border-subtle);border-radius:8px;padding:14px;font-family:var(--font-mono);font-size:12px;line-height:1.7" id="reconBox">
+              Belum ada shift aktif — buka shift untuk lihat kalkulasi.
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+              <div class="kpi" style="padding:10px"><div class="kpi-label">Expected</div><div class="kpi-value" style="font-size:16px" id="reconExpected">Rp 0</div></div>
+              <div class="kpi" style="padding:10px"><div class="kpi-label">Variance</div><div class="kpi-value amber" style="font-size:16px" id="reconVariance">Rp 0</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: REPORTS -->
+    <section data-panel="reports" style="display:none">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">06 / <b>CONSOLIDATED REPORTS</b> — multi-outlet</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="input" type="date" id="repStart" style="width:150px;padding:6px 8px" value="2025-05-17" />
+            <span class="mono-micro">—</span>
+            <input class="input" type="date" id="repEnd" style="width:150px;padding:6px 8px" value="2025-05-18" />
+            <button class="btn btn-sm" id="btnRunReport">Run</button>
+          </div>
+        </div>
+        <div style="padding:16px">
+          <div class="kpi-grid">
+            <div class="kpi"><div class="kpi-label">Gross sales</div><div class="kpi-value" id="repGross">Rp 0</div><div class="kpi-sub" id="repNetSub">Net setelah refund</div></div>
+            <div class="kpi"><div class="kpi-label">PPN collected</div><div class="kpi-value" id="repTax">Rp 0</div><div class="kpi-sub">11% per-line</div></div>
+            <div class="kpi"><div class="kpi-label">Returns</div><div class="kpi-value" style="color:var(--status-stale)" id="repReturns">Rp 0</div><div class="kpi-sub" id="repReturnCount">0 dokumen</div></div>
+            <div class="kpi"><div class="kpi-label">Drawer variance (total)</div><div class="kpi-value amber" id="repVariance">Rp 0</div><div class="kpi-sub">Σ cash_variance closed shifts</div></div>
+          </div>
+          <div style="overflow:auto;margin-top:12px"><table class="stock-table"><thead><tr><th>Outlet</th><th>Gross</th><th>Refund</th><th>Net</th><th>Drawer Δ</th><th>Share</th></tr></thead><tbody id="repOutlets"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: SCHEMA -->
+    <section data-panel="schema" style="display:none">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">07 / <b>SCHEMA & RLS — 13 tables</b></div><span class="mono-micro">drizzle-orm • postgres 16</span></div>
+        <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div style="background:var(--surface-inset);border:1px solid var(--border-subtle);border-radius:8px;padding:14px;font-family:var(--font-mono);font-size:11px;line-height:1.7">
+<b style="color:var(--lime)">pgTable — core ledger (append-only)</b><br>
+• outlets {id, code, name}<br>
+• users {id, email, role: owner|manager|cashier}<br>
+• product_variants {sku, barcode, size, color, price}<br>
+• outlet_stocks {outlet_id, variant_id, qty} ← <span style="color:var(--amber)">FOR UPDATE</span><br>
+• shifts {status: open|closed, float, expected, variance}<br>
+• sales {receipt_number UNIQUE, shift_id FK}<br>
+• sale_items {sale_id, variant_id, qty, tax}<br>
+• sale_returns {original_sale_id, reason_code}<br>
+• sale_return_items {return_to_stock}<br>
+• stock_movements {movement_type: sale|return|transfer_in|out|adjustment}<br>
+• transfers {status: in_transit|received}<br>
+• ledger_entries + audit_logs {actor, action, entity}
+          </div>
+          <div style="background:var(--surface-inset);border:1px solid var(--border-subtle);border-radius:8px;padding:14px;font-family:var(--font-mono);font-size:11px;line-height:1.7">
+<b style="color:var(--amber)">RLS — deny by default</b><br>
+• outlet_scoped: cashier/manager WHERE outlet_id = auth.outlet_id<br>
+• owner bypass: app_metadata.role = 'owner'<br>
+• shift gate: checkout requires shifts.status='open'<br>
+• no UPDATE on sales/sale_items/audit_logs<br>
+<b style="margin-top:8px;display:block;color:var(--lime)">Transaction invariants</b>
+• every write → audit_logs in same db.transaction()<br>
+• checkout: lock outlet_stocks → decrement → insert sale → stock_movements(sale)<br>
+• return: insert sale_returns → stock_movements(return) if return_to_stock<br>
+• receipt seq: INV-{OUTLET}-{YYYYMMDD}-XXXX (gapless)
+          </div>
+        </div>
+        <div style="padding:0 16px 16px;display:flex;gap:8px;flex-wrap:wrap">
+          <span class="badge">schema.ts — single source of truth</span>
+          <span class="badge">InferSelectModel • Zod at boundaries</span>
+          <span class="badge badge-lime">pnpm drizzle-kit generate → migrate</span>
+        </div>
+      </div>
+    </section>
+
+    <div style="margin-top:18px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-family:var(--font-mono);font-size:10px;color:var(--fg-low);letter-spacing:0.06em">
+      <span>BUILT FROM KEEL ARTIFACTS:</span>
+      <span style="border:1px solid var(--border-subtle);padding:3px 7px;border-radius:999px;background:var(--surface-panel)">.specify/constitution.md</span>
+      <span style="border:1px solid var(--border-subtle);padding:3px 7px;border-radius:999px;background:var(--surface-panel)">spec.md — 7 stories</span>
+      <span style="border:1px solid var(--border-subtle);padding:3px 7px;border-radius:999px;background:var(--surface-panel)">plan.md — 4 layers</span>
+      <span style="border:1px solid var(--border-subtle);padding:3px 7px;border-radius:999px;background:var(--surface-panel)">openapi.yaml — 7 endpoints</span>
+      <span style="border:1px solid var(--border-subtle);padding:3px 7px;border-radius:999px;background:var(--surface-panel)">rls.sql + security.md + audit.md</span>
+    </div>
+  </main>
+</div>
+
+<!-- DIALOGS -->
+<div class="dialog-overlay" id="dlgOpenShift">
+  <div class="dialog">
+    <div class="dialog-head"><b style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em">01 / OPEN SHIFT — US-01</b><button class="btn btn-ghost btn-sm" data-close="dlgOpenShift">✕</button></div>
+    <div class="dialog-body">
+      <div class="notice" style="margin-bottom:12px">Cash float wajib sebelum terminal bisa dipakai. Semua checkout akan terikat ke <b>shift_id</b> ini.</div>
+      <div class="field"><label>Outlet</label><select class="select" id="openOutlet"><option value="bdo">BDO — Butik Bandung</option><option value="jkt">JKT — Butik Jakarta</option><option value="wh">WH — Warehouse</option></select></div>
+      <div class="field"><label>Starting cash float (IDR) *</label><input class="input" id="openFloat" type="number" placeholder="500000" value="500000" /></div>
+      <div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-ghost" style="flex:1" data-close="dlgOpenShift">Batal</button><button class="btn btn-primary" style="flex:1" id="confirmOpenShift">Buka Shift</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="dialog-overlay" id="dlgCloseShift">
+  <div class="dialog">
+    <div class="dialog-head"><b style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em">03 / CLOSE SHIFT — variance</b><button class="btn btn-ghost btn-sm" data-close="dlgCloseShift">✕</button></div>
+    <div class="dialog-body">
+      <div style="background:var(--surface-inset);border:1px solid var(--border-subtle);border-radius:8px;padding:12px;font-family:var(--font-mono);font-size:12px;line-height:1.7;margin-bottom:12px" id="closePreview"></div>
+      <div class="field"><label>Actual cash counted (fisik) *</label><input class="input" id="closeActual" type="number" placeholder="mis. 2_450_000" /></div>
+      <div class="field"><label>Closing notes</label><textarea class="textarea" id="closeNotes" placeholder="Catatan selisih jika ada…"></textarea></div>
+      <div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-ghost" style="flex:1" data-close="dlgCloseShift">Batal</button><button class="btn btn-primary" style="flex:1" id="confirmCloseShift">Rekonsiliasi & Tutup</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="dialog-overlay" id="dlgAdjust">
+  <div class="dialog">
+    <div class="dialog-head"><b style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em">06 / STOCK ADJUSTMENT</b><button class="btn btn-ghost btn-sm" data-close="dlgAdjust">✕</button></div>
+    <div class="dialog-body">
+      <div class="grid-2">
+        <div class="field"><label>Outlet</label><select class="select" id="adjOutlet"><option value="bdo">BDO</option><option value="jkt">JKT</option><option value="wh">WH</option></select></div>
+        <div class="field"><label>Variant</label><select class="select" id="adjVariant"></select></div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Qty delta (negatif = write-off)</label><input class="input" id="adjQty" type="number" placeholder="-2" /></div>
+        <div class="field"><label>Reason code *</label><select class="select" id="adjReason"><option value="shrinkage">shrinkage</option><option value="damaged_in_boutique">damaged_in_boutique</option><option value="count_discrepancy">count_discrepancy</option><option value="sample_display">sample_display</option></select></div>
+      </div>
+      <div class="field"><label>Notes</label><textarea class="textarea" id="adjNotes" placeholder="Jelaskan alasan adjustment…"></textarea></div>
+      <button class="btn btn-primary" id="confirmAdjust" style="width:100%">Tulis stock_movements(adjustment)</button>
+    </div>
+  </div>
+</div>
+
+<div class="dialog-overlay" id="dlgPay">
+  <div class="dialog">
+    <div class="dialog-head"><b style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em">02 / CHECKOUT — atomic</b><button class="btn btn-ghost btn-sm" data-close="dlgPay">✕</button></div>
+    <div class="dialog-body">
+      <div id="paySummary" style="background:var(--surface-inset);border:1px solid var(--border-subtle);border-radius:8px;padding:12px;font-family:var(--font-mono);font-size:12px;line-height:1.7;margin-bottom:12px"></div>
+      <div class="notice lime" style="margin-bottom:12px">Transaksi pakai <b>db.transaction() + SELECT FOR UPDATE</b> per outlet_stocks. Gagal jika <b>quantity_available &lt; requested</b> — 0% oversell.</div>
+      <div style="display:flex;gap:8px"><button class="btn btn-ghost" style="flex:1" data-close="dlgPay">Batal</button><button class="btn btn-primary" style="flex:1" id="confirmPay">Confirm Checkout</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- DATA ----------
+const outlets = {bdo:{code:'BDO',name:'Butik Bandung'}, jkt:{code:'JKT',name:'Butik Jakarta'}, wh:{code:'WH',name:'Central Warehouse'}};
+const variants = [
+  {id:'GM-SILK-OLV-M', sku:'GM-SILK-OLV-M', name:'Gamis Silk Olive', size:'M', color:'Olive', price:895000, barcode:'899600100001'},
+  {id:'GM-SILK-OLV-L', sku:'GM-SILK-OLV-L', name:'Gamis Silk Olive', size:'L', color:'Olive', price:895000, barcode:'899600100002'},
+  {id:'GM-RAYON-CRM-S', sku:'GM-RAYON-CRM-S', name:'Gamis Rayon Cream', size:'S', color:'Cream', price:625000, barcode:'899600100003'},
+  {id:'HJ-VOAL-NVY', sku:'HJ-VOAL-NVY', name:'Hijab Voal Navy', size:'All', color:'Navy', price:185000, barcode:'899600100004'},
+  {id:'HJ-VOAL-SAGE', sku:'HJ-VOAL-SAGE', name:'Hijab Voal Sage', size:'All', color:'Sage', price:185000, barcode:'899600100005'},
+  {id:'KK-LINEN-PTH-L', sku:'KK-LINEN-PTH-L', name:'Koko Linen Putih', size:'L', color:'Putih', price:475000, barcode:'899600100006'},
+  {id:'KK-LINEN-PTH-M', sku:'KK-LINEN-PTH-M', name:'Koko Linen Putih', size:'M', color:'Putih', price:475000, barcode:'899600100007'},
+  {id:'AB-JETBLK-S', sku:'AB-JETBLK-S', name:'Abaya Jetblack', size:'S', color:'Jetblack', price:1050000, barcode:'899600100008'},
+  {id:'GM-KATUN-SAND-M', sku:'GM-KATUN-SAND-M', name:'Gamis Katun Sand', size:'M', color:'Sand', price:545000, barcode:'899600100009'},
+  {id:'HJ-SATIN-MAROON', sku:'HJ-SATIN-MAROON', name:'Hijab Satin Maroon', size:'All', color:'Maroon', price:225000, barcode:'899600100010'},
+];
+let stocks = {
+  bdo: {'GM-SILK-OLV-M':4,'GM-SILK-OLV-L':2,'GM-RAYON-CRM-S':0,'HJ-VOAL-NVY':12,'HJ-VOAL-SAGE':3,'KK-LINEN-PTH-L':5,'KK-LINEN-PTH-M':1,'AB-JETBLK-S':2,'GM-KATUN-SAND-M':9,'HJ-SATIN-MAROON':6},
+  jkt: {'GM-SILK-OLV-M':7,'GM-SILK-OLV-L':5,'GM-RAYON-CRM-S':8,'HJ-VOAL-NVY':2,'HJ-VOAL-SAGE':9,'KK-LINEN-PTH-L':0,'KK-LINEN-PTH-M':4,'AB-JETBLK-S':1,'GM-KATUN-SAND-M':3,'HJ-SATIN-MAROON':11},
+  wh:  {'GM-SILK-OLV-M':22,'GM-SILK-OLV-L':18,'GM-RAYON-CRM-S':15,'HJ-VOAL-NVY':30,'HJ-VOAL-SAGE':28,'KK-LINEN-PTH-L':12,'KK-LINEN-PTH-M':14,'AB-JETBLK-S':9,'GM-KATUN-SAND-M':20,'HJ-SATIN-MAROON':25},
+};
+let activeOutlet='bdo';
+let role='owner';
+let shift=null;
+let shiftSeq=1;
+let cart=[];
+let sales=[];
+let movements=[];
+let transfers=[];
+let seqPerOutlet={BDO:42,JKT:18,WH:7};
+
+const fmt = n => new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
+const nowStr = () => new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
+function genReceipt(outletCode){
+  const d=new Date(); const ymd=d.toISOString().slice(0,10).replaceAll('-','');
+  seqPerOutlet[outletCode]=(seqPerOutlet[outletCode]||0)+1;
+  return `INV-${outletCode}-${ymd}-${String(seqPerOutlet[outletCode]).padStart(4,'0')}`;
+}
+function genTransferNo(){ return `TRF-${Date.now().toString().slice(-6)}`; }
+
+// ---------- RENDER HELPERS ----------
+function outletCode(){ return outlets[activeOutlet].code; }
+function updateKpis(){
+  const grossToday = sales.filter(s=>s.outlet===activeOutlet).reduce((a,s)=>a+s.total,0);
+  const salesCount = sales.filter(s=>s.outlet===activeOutlet).length;
+  document.getElementById('kpiGross').textContent = fmt(grossToday);
+  document.getElementById('kpiSalesCount').textContent = salesCount + ' transaksi';
+  const low = Object.entries(stocks[activeOutlet]).filter(([,q])=>q<=3).length;
+  document.getElementById('kpiLow').textContent = low;
+  document.getElementById('kpiLowSub').textContent = low? `${low} varian ≤ 3 perlu restock` : 'semua aman';
+  const varianceTotal = sales.length? sales.reduce((a,s)=>a+(s.variance||0),0) : 0;
+  // use shift variances
+  const shiftVar = shifts.reduce((a,s)=>a+(s.cashVariance||0),0);
+  document.getElementById('kpiVariance').textContent = fmt(shiftVar);
+  document.getElementById('kpiTransit').textContent = transfers.filter(t=>t.status==='in_transit').length;
+  // reports sync
+  runReport();
+}
+function renderVariants(){
+  const grid=document.getElementById('variantGrid');
+  grid.innerHTML = variants.map(v=>{
+    const q = stocks[activeOutlet][v.id] ?? 0;
+    const cls = q===0?'rust':q<=3?'low':'ok';
+    const badge = q===0?'HABIS':q<=3?`LOW • ${q}`:`${q} pcs`;
+    return `<div class="variant-card" data-id="${v.id}">
+      <div class="variant-sku">${v.sku} • ${v.barcode}</div>
+      <div class="variant-name">${v.name} — ${v.size} • ${v.color}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:700">${fmt(v.price)}</span>
+        <span class="badge ${q===0?'badge-rust':q<=3?'badge-amber':'badge-lime'}" style="font-size:10px">${badge}</span>
+      </div>
+      <div class="variant-stock ${cls}" style="margin-top:4px">${q===0?'Tidak tersedia di '+outletCode():`Stok ${outletCode()}: ${q}`}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('variantOutletLabel').textContent = outletCode() + ' stock';
+  document.getElementById('stockHealth').textContent = variants.length + ' variants';
+  grid.querySelectorAll('.variant-card').forEach(el=>{
+    el.addEventListener('click',()=> addToCart(el.dataset.id));
+  });
+}
+function renderCart(){
+  const box=document.getElementById('cartLines');
+  if(cart.length===0){ box.innerHTML=`<div class="empty">Cart kosong — scan barcode atau tap quick add.<br><span class="muted">Harga PPN dihitung per-line (11%).</span></div>`; }
+  else{
+    box.innerHTML = cart.map((c,i)=>`
+      <div class="cart-row">
+        <div>
+          <div class="cart-name">${c.name} <span style="font-weight:400;color:var(--fg-low)">— ${c.size} • ${c.color}</span></div>
+          <div class="cart-meta">${c.sku} • ${fmt(c.price)} × ${c.qty} • PPN ${fmt(c.taxPerLine * c.qty)}</div>
+        </div>
+        <div class="cart-price">${fmt(c.price * c.qty)}</div>
+        <div class="cart-qty">
+          <button class="qty-btn" data-act="dec" data-i="${i}">−</button>
+          <span class="mono" style="min-width:18px;text-align:center;font-size:13px">${c.qty}</span>
+          <button class="qty-btn" data-act="inc" data-i="${i}">+</button>
+        </div>
+        <button class="qty-btn" data-act="rm" data-i="${i}" style="color:var(--status-error);border-color:var(--status-error)">✕</button>
+      </div>
+    `).join('');
+    box.querySelectorAll('[data-act]').forEach(b=>{
+      b.addEventListener('click',()=>{
+        const i=+b.dataset.i; const act=b.dataset.act;
+        if(act==='inc'){ const avail=stocks[activeOutlet][cart[i].id]??0; if(cart[i].qty < avail) cart[i].qty++; else toast('Stok tidak cukup — FOR UPDATE akan gagal'); }
+        if(act==='dec'){ cart[i].qty=Math.max(1,cart[i].qty-1); }
+        if(act==='rm'){ cart.splice(i,1); }
+        renderCart(); calcTotals();
+      });
+    });
+  }
+  calcTotals();
+}
+function calcTotals(){
+  let sub=0, tax=0, disc=0;
+  cart.forEach(c=>{ sub+=c.price*c.qty; tax+=c.taxPerLine*c.qty; });
+  const grand=sub+tax-disc;
+  document.getElementById('tSubtotal').textContent=fmt(sub);
+  document.getElementById('tTax').textContent=fmt(tax);
+  document.getElementById('tDisc').textContent='- '+fmt(disc);
+  document.getElementById('tGrand').textContent=fmt(grand);
+  document.getElementById('rSub').textContent=fmt(sub);
+  document.getElementById('rTax').textContent=fmt(tax);
+  document.getElementById('rGrand').textContent=fmt(grand);
+  const tender=parseInt(document.getElementById('cashTendered').value)||0;
+  const change = tender? Math.max(0,tender-grand):0;
+  document.getElementById('rTender').textContent=fmt(tender);
+  document.getElementById('rChange').textContent=fmt(change);
+  // receipt lines
+  const rl=document.getElementById('receiptLines');
+  if(cart.length===0) rl.innerHTML='<span style="opacity:0.6">Belum ada item</span>';
+  else rl.innerHTML = cart.map(c=>`<div class="receipt-line"><span>${c.name} ${c.size} ×${c.qty}</span><span>${fmt(c.price*c.qty + c.taxPerLine*c.qty)}</span></div>`).join('')+ `<div class="receipt-line" style="margin-top:6px"><span>PPN detail</span><span>${fmt(tax)}</span></div>`;
+
+  // gate
+  const gateLocked = !shift || shift.status!=='open' || shift.outlet!==activeOutlet;
+  document.getElementById('lockBadge').textContent = gateLocked? '● SHIFT GATE • LOCKED' : '● SHIFT GATE • OPEN';
+  document.getElementById('lockBadge').className = gateLocked? 'badge badge-rust' : 'badge badge-lime';
+  document.getElementById('shiftGateNotice').style.display = gateLocked? 'block':'none';
+  document.getElementById('btnCheckout').disabled = gateLocked || cart.length===0;
+  document.getElementById('btnPay').disabled = gateLocked || cart.length===0;
+}
+function addToCart(variantId, qty=1){
+  const v=variants.find(x=>x.id===variantId); if(!v) return;
+  const avail=stocks[activeOutlet][variantId]??0;
+  if(avail<=0){ toast('Stok habis di '+outletCode()); return; }
+  const existing=cart.find(c=>c.id===variantId);
+  if(existing){
+    if(existing.qty+qty>avail){ toast('Melebihi stok tersedia ('+avail+')'); return; }
+    existing.qty+=qty;
+  } else{
+    cart.push({id:v.id, sku:v.sku, name:v.name, size:v.size, color:v.color, price:v.price, qty, taxPerLine: Math.round(v.price*0.11)});
+  }
+  renderCart();
+  toast(v.name+' ditambahkan');
+}
+function renderStockTable(){
+  const q=document.getElementById('stockSearch').value.toLowerCase();
+  const f=document.getElementById('stockFilter').value;
+  const tbody=document.getElementById('stockBody');
+  let rows=variants.map(v=>{
+    const b=stocks.bdo[v.id]??0, j=stocks.jkt[v.id]??0, w=stocks.wh[v.id]??0;
+    const minMath = Math.min(b,j,w); // for filter
+    return {v,b,j,w, min:Math.min(b,j,w), anyLow: (b<=3||j<=3||w<=3)};
+  }).filter(r=>{
+    if(q && !`${r.v.sku} ${r.v.name} ${r.v.color} ${r.v.size}`.toLowerCase().includes(q)) return false;
+    if(f==='low' && !(r.b<=3||r.j<=3||r.w<=3)) return false;
+    if(f==='ok' && (r.b<=3||r.j<=3||r.w<=3)) return false;
+    if(f==='empty' && !(r.b===0||r.j===0||r.w===0)) return false;
+    return true;
+  });
+  tbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td><b style="color:var(--fg-hi)">${r.v.sku}</b><br><span style="font-size:12px">${r.v.name} — ${r.v.size} • ${r.v.color}</span><br><span class="mono-micro">${r.v.barcode}</span></td>
+      <td><span style="font-family:var(--font-mono);font-weight:700;color:${r.b===0?'var(--status-error)':r.b<=3?'var(--amber)':'var(--lime)'}">${r.b}</span></td>
+      <td><span style="font-family:var(--font-mono);font-weight:700;color:${r.j===0?'var(--status-error)':r.j<=3?'var(--amber)':'var(--lime)'}">${r.j}</span></td>
+      <td><span style="font-family:var(--font-mono);font-weight:700;color:${r.w===0?'var(--status-error)':r.w<=3?'var(--amber)':'var(--lime)'}">${r.w}</span></td>
+      <td class="mono">${fmt(r.v.price)}</td>
+      <td>${r.b===0||r.j===0?'<span class="badge badge-rust">habis</span>':r.anyLow?'<span class="badge badge-amber">low</span>':'<span class="badge badge-lime">ok</span>'}</td>
+    </tr>
+  `).join('') || `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--fg-low)">Tidak ada data</td></tr>`;
+}
+function renderMovements(){
+  const body=document.getElementById('movementBody');
+  const all=[...movements].reverse().slice(0,12);
+  if(all.length===0){ body.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--fg-low)">Belum ada movement — lakukan checkout / transfer / adjustment</td></tr>`; return; }
+  body.innerHTML=all.map(m=>`
+    <tr>
+      <td class="mono" style="font-size:11px">${m.at}</td>
+      <td><span class="badge">${m.outlet}</span></td>
+      <td class="mono" style="font-size:11px">${m.sku}</td>
+      <td><span class="badge ${m.type==='sale'?'badge-lime':m.type==='adjustment'?'badge-rust':'badge-amber'}">${m.type}</span></td>
+      <td class="mono" style="font-weight:700;color:${m.qty>0?'var(--lime)':'var(--amber)'}">${m.qty>0?'+':''}${m.qty}</td>
+      <td class="mono" style="font-size:11px">${m.prev} → ${m.now}</td>
+    </tr>
+  `).join('');
+}
+function renderTransfers(){
+  const list=document.getElementById('transferList');
+  document.getElementById('transferCount').textContent = transfers.length? transfers.length+' docs' : '—';
+  if(transfers.length===0){ list.innerHTML=`<div class="empty">Belum ada transfer</div>`; return; }
+  list.innerHTML = transfers.map(t=>`
+    <div class="transfer-card">
+      <div>
+        <div class="mono" style="font-size:11px;font-weight:700">${t.no} • <span class="badge ${t.status==='in_transit'?'badge-amber':'badge-lime'}" style="font-size:9px">${t.status}</span></div>
+        <div style="font-size:12px;margin-top:4px">${outlets[t.from].name} → ${outlets[t.to].name}</div>
+        <div class="mono-micro">${t.items.map(i=>i.sku+' ×'+i.qty).join(' • ')} • ${t.at}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        ${t.status==='in_transit'?`<button class="btn btn-sm btn-primary" data-ack="${t.id}">Terima</button><button class="btn btn-sm" data-cancel="${t.id}">Batal</button>`:`<span class="mono-micro" style="color:var(--lime)">✓ received</span>`}
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('[data-ack]').forEach(b=> b.addEventListener('click',()=>{
+    const tr=transfers.find(x=>x.id===b.dataset.ack); if(!tr) return;
+    tr.status='received';
+    tr.items.forEach(it=>{
+      const prev=stocks[tr.to][it.id]??0;
+      stocks[tr.to][it.id]=prev+it.qty;
+      movements.push({at:nowStr(), outlet:outlets[tr.to].code, sku:it.sku, type:'transfer_in', qty:it.qty, prev, now:prev+it.qty});
+    });
+    renderTransfers(); renderStockTable(); renderMovements(); updateKpis(); toast('Transfer diterima — stock bertambah');
+  }));
+  list.querySelectorAll('[data-cancel]').forEach(b=> b.addEventListener('click',()=>{
+    const tr=transfers.find(x=>x.id===b.dataset.cancel); if(!tr) return;
+    // rollback source
+    tr.items.forEach(it=>{
+      stocks[tr.from][it.id]=(stocks[tr.from][it.id]??0)+it.qty;
+      movements.push({at:nowStr(), outlet:outlets[tr.from].code, sku:it.sku, type:'transfer_in', qty:it.qty, prev:stocks[tr.from][it.id]-it.qty, now:stocks[tr.from][it.id]});
+    });
+    transfers = transfers.filter(x=>x.id!==tr.id);
+    renderTransfers(); renderStockTable(); renderMovements(); updateKpis(); toast('Transfer dibatalkan');
+  }));
+}
+function renderTransferPicker(){
+  const box=document.getElementById('transferPicker');
+  box.innerHTML = variants.map(v=>{
+    const avail = stocks[document.getElementById('trSource').value][v.id]??0;
+    return `<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border-subtle);border-radius:6px;background:var(--bg-base)">
+      <input type="checkbox" data-trpick="${v.id}" />
+      <span style="flex:1"><b style="font-size:12px">${v.sku}</b> <span style="font-size:11px;color:var(--fg-low)">— ${v.name} ${v.size}</span><br><span class="mono-micro">stok source: ${avail}</span></span>
+      <input type="number" min="1" max="${avail}" value="1" style="width:64px" class="input" data-trqty="${v.id}" />
+    </label>`;
+  }).join('');
+}
+
+// shifts mock history
+let shifts=[
+  {id:'sh-001', outlet:'bdo', cashier:'Aisyah', status:'closed', float:500000, expected:2120000, actual:2115000, cashVariance:-5000, openedAt:'2025-05-17 08:02', closedAt:'2025-05-17 21:10', salesCount:14},
+];
+function renderShifts(){
+  const box=document.getElementById('shiftHistory');
+  const all=[...shifts].reverse();
+  if(shift && shift.status==='open') all.unshift(shift);
+  box.innerHTML = all.map(s=>`
+    <div style="border:1px solid ${s.status==='open'?'var(--lime)':'var(--border-subtle)'};border-radius:8px;padding:12px;background:${s.status==='open'?'oklch(89% 0.235 129 / 0.08)':'var(--bg-base)'}">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="mono" style="font-size:11px;font-weight:700">${s.id} • ${outlets[s.outlet].code} • ${s.cashier}</span>
+        <span class="badge ${s.status==='open'?'badge-lime':s.cashVariance===0?'badge-lime':'badge-amber'}">${s.status}${s.status==='closed'?` • Δ ${fmt(s.cashVariance)}`:''}</span>
+      </div>
+      <div class="mono-micro" style="margin-top:6px">${s.openedAt} → ${s.closedAt||'open'} • float ${fmt(s.float)} • expected ${fmt(s.expected||0)}</div>
+      ${s.status==='closed'?`<div style="margin-top:6px;font-family:var(--font-mono);font-size:11px;color:var(--fg-mid)">Actual ${fmt(s.actual)} • ${s.salesCount} sales</div>`:''}
+    </div>
+  `).join('');
+  // recon
+  if(shift && shift.status==='open'){
+    const cashSales = sales.filter(x=>x.outlet===shift.outlet && x.shiftId===shift.id && x.method==='cash').reduce((a,s)=>a+s.total,0);
+    const cashRefunds = 0; // simplified
+    const expected = shift.float + cashSales - cashRefunds;
+    document.getElementById('reconBox').innerHTML = `Shift <b>${shift.id}</b> — ${outlets[shift.outlet].name}<br>Float ${fmt(shift.float)} + cash sales ${fmt(cashSales)} − cash refunds ${fmt(cashRefunds)} = <b style="color:var(--lime)">${fmt(expected)}</b><br><span class="muted">Hitung fisik lalu tutup shift untuk dapat variance.</span>`;
+    document.getElementById('reconExpected').textContent=fmt(expected);
+    shift.expected=expected;
+  } else {
+    document.getElementById('reconBox').textContent='Belum ada shift aktif — buka shift untuk lihat kalkulasi.';
+    document.getElementById('reconExpected').textContent='Rp 0';
+    document.getElementById('reconVariance').textContent='Rp 0';
+  }
+}
+function renderSalesList(){
+  const box=document.getElementById('recentSales');
+  if(sales.length===0){ box.innerHTML=`<div class="empty">Belum ada penjualan</div>`; return; }
+  box.innerHTML = [...sales].reverse().slice(0,8).map(s=>`
+    <div style="border:1px solid var(--border-subtle);border-radius:8px;padding:10px;background:var(--bg-base);cursor:pointer" data-receipt="${s.receipt}">
+      <div style="display:flex;justify-content:space-between"><span class="mono" style="font-size:11px;font-weight:700">${s.receipt}</span><span class="badge badge-lime">${s.outlet.toUpperCase()}</span></div>
+      <div style="font-size:12px;margin-top:4px">${s.items.map(i=>i.sku+' ×'+i.qty).join(' • ')}</div>
+      <div class="mono-micro" style="margin-top:4px">${s.at} • ${fmt(s.total)} • ${s.method}</div>
+    </div>
+  `).join('');
+  box.querySelectorAll('[data-receipt]').forEach(el=> el.addEventListener('click',()=>{
+    document.getElementById('returnReceipt').value=el.dataset.receipt;
+    loadReturnItems();
+  }));
+}
+function loadReturnItems(){
+  const receipt=document.getElementById('returnReceipt').value.trim();
+  const sale=sales.find(s=>s.receipt===receipt);
+  const box=document.getElementById('returnItems');
+  if(!sale){ box.innerHTML=`<div class="mono-micro" style="color:var(--status-error)">Receipt tidak ditemukan</div>`; return; }
+  box.innerHTML = sale.items.map(it=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border-subtle);border-radius:6px;background:var(--bg-base)">
+      <input type="checkbox" data-ret="${it.id}" checked />
+      <span style="flex:1;font-size:12px"><b>${it.sku}</b> — ${it.name} ×${it.qty} • ${fmt(it.price)}</span>
+      <input type="number" min="1" max="${it.qty}" value="${it.qty}" class="input" style="width:64px;padding:6px" data-retqty="${it.id}" />
+    </label>
+  `).join('');
+}
+function runReport(){
+  const gross = sales.reduce((a,s)=>a+s.subtotal+s.tax,0);
+  const tax = sales.reduce((a,s)=>a+s.tax,0);
+  const returnsAmt = 0; // simplified, could track
+  const net = gross - returnsAmt;
+  document.getElementById('repGross').textContent=fmt(gross);
+  document.getElementById('repTax').textContent=fmt(tax);
+  document.getElementById('repReturns').textContent=fmt(returnsAmt);
+  document.getElementById('repNetSub').textContent='Net '+fmt(net);
+  document.getElementById('repVariance').textContent=fmt(shifts.reduce((a,s)=>a+(s.cashVariance||0),0));
+  document.getElementById('repReturnCount').textContent='0 dokumen';
+  const byOutlet=['bdo','jkt','wh'].map(o=>{
+    const os=sales.filter(s=>s.outlet===o);
+    const g=os.reduce((a,s)=>a+s.total,0);
+    return {code:outlets[o].code, name:outlets[o].name, gross:g, ret:0, net:g, variance:shifts.filter(s=>s.outlet===o).reduce((a,s)=>a+(s.cashVariance||0),0)};
+  });
+  const totalGross = byOutlet.reduce((a,x)=>a+x.gross,0)||1;
+  document.getElementById('repOutlets').innerHTML = byOutlet.map(r=>`
+    <tr><td><b>${r.code}</b> — ${r.name}</td><td class="mono">${fmt(r.gross)}</td><td class="mono">${fmt(r.ret)}</td><td class="mono" style="font-weight:700">${fmt(r.net)}</td><td class="mono" style="color:${r.variance===0?'var(--lime)':'var(--amber)'}">${fmt(r.variance)}</td><td><div style="background:var(--bg-base);border:1px solid var(--border-subtle);border-radius:999px;height:8px;width:100px;overflow:hidden"><div style="height:100%;width:${Math.round(r.gross/totalGross*100)}%;background:var(--lime)"></div></div></td></tr>
+  `).join('');
+}
+// ---------- EVENTS ----------
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+document.querySelectorAll('.nav-item').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const view=btn.dataset.view;
+    document.querySelectorAll('[data-panel]').forEach(p=> p.style.display = p.dataset.panel===view? 'block':'none');
+  });
+});
+document.querySelectorAll('[data-role]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-role]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    role=b.dataset.role;
+    const pill=document.getElementById('rolePill');
+    if(role==='owner'){ pill.textContent='OWNER • BDO + JKT + WH'; pill.className='role-pill owner'; }
+    if(role==='manager'){ pill.textContent='MANAGER • '+outletCode(); pill.className='role-pill'; }
+    if(role==='cashier'){ pill.textContent='CASHIER • '+outletCode(); pill.className='role-pill'; }
+    toast('Role: '+role);
+  });
+});
+document.getElementById('outletSelect').addEventListener('change',e=>{
+  activeOutlet=e.target.value;
+  document.querySelector('.panel-title b').textContent='POS TERMINAL — '+outlets[activeOutlet].name;
+  renderVariants(); renderCart(); renderStockTable(); updateKpis();
+  // update shift badge outlet
+  if(shift && shift.status==='open' && shift.outlet!==activeOutlet){
+    // cashier scoped warning
+    if(role!=='owner') toast('Outlet berbeda — terminal terkunci (scope isolation)');
+  }
+});
+document.querySelectorAll('[data-quick]').forEach(b=> b.addEventListener('click',()=> addToCart(b.dataset.quick)));
+document.getElementById('barcodeInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const val=e.target.value.trim().toUpperCase();
+    if(!val) return;
+    // try sku or barcode
+    const found=variants.find(v=>v.sku===val || v.barcode===val);
+    if(found) addToCart(found.id);
+    else toast('SKU/barcode tidak ditemukan');
+    e.target.value='';
+  }
+});
+document.getElementById('cashTendered').addEventListener('input',calcTotals);
+document.getElementById('payMethod').addEventListener('change',calcTotals);
+document.getElementById('btnClearCart').addEventListener('click',()=>{ cart=[]; renderCart(); });
+document.getElementById('btnPrint').addEventListener('click',()=> window.print());
+document.getElementById('btnCopyReceipt').addEventListener('click',()=>{
+  const no=document.getElementById('receiptNo').textContent;
+  navigator.clipboard.writeText(no); toast('Disalin: '+no);
+});
+document.getElementById('stockSearch').addEventListener('input',renderStockTable);
+document.getElementById('stockFilter').addEventListener('change',renderStockTable);
+document.getElementById('btnRefreshStock').addEventListener('click',()=>{ renderStockTable(); toast('Stock refreshed'); });
+
+// dialogs
+function openDlg(id){ document.getElementById(id).classList.add('open'); }
+function closeDlg(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('[data-close]').forEach(b=> b.addEventListener('click',()=> closeDlg(b.dataset.close)));
+document.getElementById('btnOpenShift').addEventListener('click',()=> openDlg('dlgOpenShift'));
+document.getElementById('btnCloseShift').addEventListener('click',()=>{
+  const cashSales = sales.filter(x=>x.outlet===shift.outlet && x.shiftId===shift.id && x.method==='cash').reduce((a,s)=>a+s.total,0);
+  const expected = shift.float + cashSales;
+  document.getElementById('closePreview').innerHTML = `Shift <b>${shift.id}</b> • ${outlets[shift.outlet].name}<br>Float ${fmt(shift.float)} + cash sales ${fmt(cashSales)} = <b>${fmt(expected)}</b><br><span class="muted">Masukkan hitung fisik — variance akan dihitung otomatis.</span>`;
+  document.getElementById('closeActual').value=expected;
+  openDlg('dlgCloseShift');
+});
+document.getElementById('confirmOpenShift').addEventListener('click',()=>{
+  const out=document.getElementById('openOutlet').value;
+  const fl=parseInt(document.getElementById('openFloat').value)||0;
+  if(fl<=0){ toast('Float harus > 0'); return; }
+  shift={id:`sh-${String(shiftSeq++).padStart(3,'0')}`, outlet:out, cashier: role==='cashier'?'Kasir 01':role==='manager'?'Manager':'Owner', status:'open', float:fl, expected:fl, openedAt:nowStr()};
+  activeOutlet=out; document.getElementById('outletSelect').value=out;
+  closeDlg('dlgOpenShift');
+  syncShiftUI(); renderShifts(); renderVariants(); renderCart(); updateKpis();
+  toast('Shift dibuka — terminal unlocked');
+});
+document.getElementById('confirmCloseShift').addEventListener('click',()=>{
+  const actual=parseInt(document.getElementById('closeActual').value)||0;
+  const notes=document.getElementById('closeNotes').value;
+  const expected=shift.expected;
+  const variance=actual-expected;
+  shift.status='closed'; shift.actual=actual; shift.cashVariance=variance; shift.closedAt=nowStr(); shift.closingNotes=notes;
+  shifts.push({...shift});
+  shift=null;
+  closeDlg('dlgCloseShift');
+  syncShiftUI(); renderShifts(); updateKpis();
+  toast('Shift closed • variance '+fmt(variance));
+});
+function syncShiftUI(){
+  const dot=document.getElementById('shiftDot');
+  const txt=document.getElementById('shiftStatusText');
+  const sub=document.getElementById('shiftSub');
+  const btnOpen=document.getElementById('btnOpenShift');
+  const btnClose=document.getElementById('btnCloseShift');
+  if(shift && shift.status==='open'){
+    dot.className='shift-dot'; txt.textContent='SHIFT OPEN — '+shift.id; sub.textContent=outlets[shift.outlet].name+' • float '+fmt(shift.float);
+    btnOpen.style.display='none'; btnClose.style.display='inline-flex';
+  } else {
+    dot.className='shift-dot closed'; txt.textContent='SHIFT CLOSED'; sub.textContent='Buka shift untuk unlock terminal';
+    btnOpen.style.display='inline-flex'; btnClose.style.display='none';
+  }
+  // also receipt no
+  document.getElementById('receiptNo').textContent = shift? genReceipt(outlets[shift.outlet].code).replace(/-\d{4}$/,'-XXXX') : `INV-${outletCode()}-—`;
+  document.getElementById('receiptTime').textContent=nowStr();
+  calcTotals();
+}
+
+// checkout
+document.getElementById('btnCheckout').addEventListener('click',()=>{
+  if(!shift || shift.status!=='open'){ toast('Buka shift dulu'); return; }
+  if(cart.length===0) return;
+  const method=document.getElementById('payMethod').value;
+  const sub=cart.reduce((a,c)=>a+c.price*c.qty,0);
+  const tax=cart.reduce((a,c)=>a+c.taxPerLine*c.qty,0);
+  const grand=sub+tax;
+  const tender=parseInt(document.getElementById('cashTendered').value)||0;
+  if(method==='cash' && tender < grand){ toast('Tunai kurang — butuh '+fmt(grand)); return; }
+  // build summary
+  document.getElementById('paySummary').innerHTML = cart.map(c=>`<div style="display:flex;justify-content:space-between"><span>${c.sku} ×${c.qty}</span><span>${fmt(c.price*c.qty)}</span></div>`).join('')+ `<div style="border-top:1px dashed var(--border-strong);margin:8px 0"></div><div style="display:flex;justify-content:space-between"><span>Subtotal + PPN</span><b>${fmt(grand)}</b></div><div style="display:flex;justify-content:space-between"><span>Metode</span><span>${method}</span></div><div style="display:flex;justify-content:space-between"><span>Outlet • Shift</span><span>${outletCode()} • ${shift.id}</span></div>`;
+  openDlg('dlgPay');
+});
+document.getElementById('btnPay').addEventListener('click',()=> document.getElementById('btnCheckout').click());
+document.getElementById('confirmPay').addEventListener('click',()=>{
+  // simulate atomic lock check
+  for(const c of cart){
+    const avail=stocks[activeOutlet][c.id]??0;
+    if(c.qty > avail){
+      toast('Gagal — stok '+c.sku+' hanya '+avail+' (FOR UPDATE)');
+      closeDlg('dlgPay'); return;
+    }
+  }
+  const sub=cart.reduce((a,c)=>a+c.price*c.qty,0);
+  const tax=cart.reduce((a,c)=>a+c.taxPerLine*c.qty,0);
+  const grand=sub+tax;
+  const method=document.getElementById('payMethod').value;
+  const tender=parseInt(document.getElementById('cashTendered').value)|| (method==='cash'? grand:0);
+  const change = method==='cash'? Math.max(0,tender-grand):0;
+  const receipt=genReceipt(outletCode());
+  // decrement stock + movements
+  cart.forEach(c=>{
+    const prev=stocks[activeOutlet][c.id];
+    stocks[activeOutlet][c.id]=prev-c.qty;
+    movements.push({at:nowStr(), outlet:outletCode(), sku:c.sku, type:'sale', qty:-c.qty, prev, now:prev-c.qty});
+  });
+  sales.push({id:'sale-'+Date.now(), receipt, outlet:activeOutlet, shiftId:shift.id, method, subtotal:sub, tax, total:grand, tender, change, items:cart.map(c=>({...c})), at:nowStr()});
+  document.getElementById('receiptNo').textContent=receipt;
+  document.getElementById('receiptTime').textContent=nowStr();
+  cart=[]; document.getElementById('cashTendered').value='';
+  closeDlg('dlgPay'); renderCart(); renderVariants(); renderStockTable(); renderMovements(); renderSalesList(); updateKpis(); renderShifts();
+  toast('Checkout sukses — '+receipt+' • stock locked');
+  // flash lime border
+  document.querySelector('.pos-grid .panel').style.borderColor='var(--lime)';
+  setTimeout(()=> document.querySelector('.pos-grid .panel').style.borderColor='',600);
+});
+
+// transfers
+document.getElementById('trSource').addEventListener('change',renderTransferPicker);
+document.getElementById('btnCreateTransfer').addEventListener('click',()=>{
+  const from=document.getElementById('trSource').value;
+  const to=document.getElementById('trDest').value;
+  if(from===to){ toast('Source & destination harus beda'); return; }
+  const picked=[...document.querySelectorAll('[data-trpick]')].filter(cb=>cb.checked).map(cb=>{
+    const id=cb.dataset.trpick; const qty=parseInt(document.querySelector(`[data-trqty="${id}"]`).value)||0;
+    const v=variants.find(x=>x.id===id);
+    return {id, sku:v.sku, qty};
+  }).filter(x=>x.qty>0);
+  if(picked.length===0){ toast('Pilih minimal 1 item'); return; }
+  // lock check
+  for(const it of picked){
+    const avail=stocks[from][it.id]??0;
+    if(it.qty>avail){ toast(`Stok ${it.sku} di ${from.toUpperCase()} hanya ${avail}`); return; }
+  }
+  picked.forEach(it=>{
+    const prev=stocks[from][it.id];
+    stocks[from][it.id]=prev-it.qty;
+    movements.push({at:nowStr(), outlet:outlets[from].code, sku:it.sku, type:'transfer_out', qty:-it.qty, prev, now:prev-it.qty});
+  });
+  const tr={id:'tr-'+Date.now(), no:genTransferNo(), from, to, items:picked, status:'in_transit', at:nowStr()};
+  transfers.push(tr);
+  renderTransfers(); renderStockTable(); renderMovements(); updateKpis();
+  toast('Transfer '+tr.no+' in_transit');
+});
+document.getElementById('btnAdjust').addEventListener('click',()=>{
+  const sel=document.getElementById('adjVariant');
+  sel.innerHTML = variants.map(v=>`<option value="${v.id}">${v.sku} — ${v.name} ${v.size}</option>`).join('');
+  openDlg('dlgAdjust');
+});
+document.getElementById('confirmAdjust').addEventListener('click',()=>{
+  const outlet=document.getElementById('adjOutlet').value;
+  const vid=document.getElementById('adjVariant').value;
+  const qty=parseInt(document.getElementById('adjQty').value)||0;
+  const reason=document.getElementById('adjReason').value;
+  const notes=document.getElementById('adjNotes').value;
+  if(qty===0){ toast('Qty tidak boleh 0'); return; }
+  if(!notes.trim() && qty<0){ toast('Notes wajib untuk write-off'); return; }
+  const v=variants.find(x=>x.id===vid);
+  const prev=stocks[outlet][vid]??0;
+  const now=prev+qty;
+  if(now<0){ toast('Stock tidak boleh negatif'); return; }
+  stocks[outlet][vid]=now;
+  movements.push({at:nowStr(), outlet:outlets[outlet].code, sku:v.sku, type:'adjustment', qty, prev, now, reason});
+  closeDlg('dlgAdjust'); renderStockTable(); renderMovements(); updateKpis();
+  toast(`Adjustment ${qty>0?'+':''}${qty} • ${reason}`);
+});
+document.getElementById('btnProcessReturn').addEventListener('click',()=>{
+  const receipt=document.getElementById('returnReceipt').value.trim();
+  const reason=document.getElementById('returnReason').value;
+  if(!receipt || !reason){ toast('Receipt & reason_code wajib'); return; }
+  if(!shift || shift.status!=='open'){ toast('Butuh shift open untuk refund'); return; }
+  const sale=sales.find(s=>s.receipt===receipt);
+  if(!sale){ toast('Receipt tidak ditemukan'); return; }
+  const toReturn=[...document.querySelectorAll('[data-ret]')].filter(cb=>cb.checked).map(cb=>{
+    const id=cb.dataset.ret; const qty=parseInt(document.querySelector(`[data-retqty="${id}"]`).value)||0;
+    return {id, qty};
+  }).filter(x=>x.qty>0);
+  if(toReturn.length===0){ toast('Pilih item yang dikembalikan'); return; }
+  const returnToStock=document.getElementById('returnToStock').checked;
+  // calculate refund
+  let refund=0;
+  toReturn.forEach(r=>{
+    const item=sale.items.find(i=>i.id===r.id);
+    if(item) refund += (item.price + item.taxPerLine)* r.qty;
+  });
+  // restore stock if needed
+  if(returnToStock){
+    toReturn.forEach(r=>{
+      const it=sale.items.find(i=>i.id===r.id);
+      if(!it) return;
+      const prev=stocks[sale.outlet][r.id]??0;
+      stocks[sale.outlet][r.id]=prev+r.qty;
+      movements.push({at:nowStr(), outlet:outlets[sale.outlet].code, sku:it.sku, type:'return', qty:r.qty, prev, now:prev+r.qty});
+    });
+  }
+  // mark sale partially_refunded
+  sale.paymentStatus='partially_refunded';
+  closeDlg('dlgPay');
+  renderStockTable(); renderMovements(); updateKpis();
+  toast(`Refund ${fmt(refund)} • ${reason} • stock ${returnToStock?'restored':'(no restock)'}`);
+  document.getElementById('returnReceipt').value=''; document.getElementById('returnItems').innerHTML='';
+});
+document.getElementById('returnReceipt').addEventListener('change',loadReturnItems);
+document.getElementById('returnReceipt').addEventListener('keydown',e=>{ if(e.key==='Enter') loadReturnItems(); });
+document.getElementById('btnRunReport').addEventListener('click',runReport);
+document.getElementById('repStart').addEventListener('change',runReport);
+document.getElementById('repEnd').addEventListener('change',runReport);
+
+// init
+document.getElementById('adjVariant')?.insertAdjacentHTML('beforeend','');
+renderVariants(); renderCart(); renderStockTable(); renderMovements(); renderTransfers(); renderTransferPicker(); renderShifts(); renderSalesList(); syncShiftUI(); updateKpis();
+// set receipt time loop
+setInterval(()=>{ document.getElementById('receiptTime').textContent=nowStr(); }, 60000);
+// demo: prefill shift open hint
+</script>
+</body>
+</html>
