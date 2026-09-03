@@ -283,17 +283,40 @@ async function finalizeReport(
       if (order && decision) {
         const entryPrice = report.avgFillPrice;
         const direction = order.side === 'BUY' ? 1 : -1;
-        await tx.insert(positions).values({
-          symbol: order.symbol,
-          venue: order.venue,
-          decisionId,
-          orderId: order.id,
-          sizePct: decision.sizePct,
-          entryPrice: String(entryPrice),
-          stopLossPrice: String(entryPrice * (1 + (direction * Number(decision.stopLossPct)) / 100)),
-          takeProfitPrice: String(entryPrice * (1 + (direction * Number(decision.takeProfitPct)) / 100)),
-          isOpen: true,
-        });
+        try {
+          await tx.insert(positions).values({
+            symbol: order.symbol,
+            venue: order.venue,
+            decisionId,
+            orderId: order.id,
+            sizePct: decision.sizePct,
+            entryPrice: String(entryPrice),
+            stopLossPrice: String(entryPrice * (1 + (direction * Number(decision.stopLossPct)) / 100)),
+            takeProfitPrice: String(entryPrice * (1 + (direction * Number(decision.takeProfitPct)) / 100)),
+            isOpen: true,
+          });
+        } catch (insertErr) {
+          // DB anti-race backstop: duplicate open position for this symbol (23505) →
+          // transition decision to REJECTED + mark order CANCELLED so no double exposure.
+          const code = (insertErr as { code?: string })?.code;
+          if (code === '23505') {
+            await tx
+              .update(orders)
+              .set({ status: 'CANCELLED', updatedAt: new Date(timeService.now()) })
+              .where(eq(orders.id, orderId));
+            await transitionDecision(tx, decisionId, 'REJECTED', 'duplicate open position for symbol (positions_one_open_per_symbol)', SYSTEM_PRINCIPAL_ID);
+            await AuditService.recordInTx(tx, {
+              actorId: SYSTEM_PRINCIPAL_ID,
+              action: 'POSITION_DUPLICATE_REJECTED',
+              entity: 'positions',
+              entityId: String(decisionId),
+              diff: { symbol: order.symbol, orderId, reason: 'duplicate open position per symbol — DB unique partial index', avgFillPrice: report.avgFillPrice },
+            });
+            const [cancelledOrder] = await tx.select().from(orders).where(eq(orders.id, orderId));
+            return { decisionId, order: cancelledOrder ?? null, reconciled: false, terminalState: 'REJECTED' as const };
+          }
+          throw insertErr;
+        }
       }
     }
 

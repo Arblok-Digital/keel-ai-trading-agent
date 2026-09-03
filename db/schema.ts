@@ -208,6 +208,7 @@ export const positions = pgTable(
   (t) => [
     uniqueIndex('positions_decision_id_key').on(t.decisionId),
     uniqueIndex('positions_order_id_key').on(t.orderId),
+    uniqueIndex('positions_one_open_per_symbol_key').on(t.symbol).where(sql`is_open = true`),
   ],
 );
 
